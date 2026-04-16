@@ -82,8 +82,130 @@ function calculateRecipeScore(
   };
 }
 
+function getDemoRecipes(): Recipe[] {
+  const baseIng = (id: string, name: string) => ({
+    id, name, category: 'Produce' as any, subcategory: '', aliases: [],
+    default_shelf_life_fridge_days: 7, default_shelf_life_freezer_days: 180,
+    default_shelf_life_pantry_days: 14, default_shelf_life_opened_days: 4,
+    storage_tips: '', ethylene_producer: false, ethylene_sensitive: false,
+    common_substitutes: [], usda_fdc_id: null, barcode_ids: [], embedding: null,
+  });
+
+  return [
+    {
+      id: 'r1', title: 'Spinach & Mushroom Frittata', description: 'Quick high-protein meal that uses up wilting spinach and aging eggs.',
+      cuisine: 'Italian', difficulty: 'easy', prep_time_min: 10, cook_time_min: 15, total_time_min: 25,
+      servings: 4, source_type: 'curated', source_url: null, image_url: null,
+      avg_rating: 4.6, rating_count: 312, tags: ['quick', 'high-protein', 'vegetarian'],
+      embedding: null, created_at: new Date().toISOString(),
+      instructions: [
+        { step: 1, instruction: 'Preheat oven to 375F. Whisk 8 eggs in a bowl with salt and pepper.' },
+        { step: 2, instruction: 'In an oven-safe skillet, sauté mushrooms in butter for 5 min.', timer_minutes: 5 },
+        { step: 3, instruction: 'Add spinach, cook until wilted, 1 min.', timer_minutes: 1 },
+        { step: 4, instruction: 'Pour eggs over veggies, sprinkle cheese on top.' },
+        { step: 5, instruction: 'Bake 15 min until set in the center.', timer_minutes: 15 },
+      ],
+      nutrition_per_serving: { calories: 245, protein_g: 18, carbs_g: 4, fat_g: 17, fiber_g: 1, sodium_mg: 320 },
+      ingredients: [
+        { recipe_id: 'r1', ingredient_id: 'ing-eggs', quantity: 8, unit: 'whole', preparation: null, is_optional: false, substitute_ingredient_ids: null, ingredient: baseIng('ing-eggs', 'Eggs') },
+        { recipe_id: 'r1', ingredient_id: 'ing-spinach', quantity: 2, unit: 'cups', preparation: 'fresh', is_optional: false, substitute_ingredient_ids: null, ingredient: baseIng('ing-spinach', 'Baby Spinach') },
+        { recipe_id: 'r1', ingredient_id: 'ing-cheese', quantity: 0.5, unit: 'cup', preparation: 'shredded', is_optional: false, substitute_ingredient_ids: null, ingredient: baseIng('ing-cheese', 'Cheddar Cheese') },
+      ],
+    },
+    {
+      id: 'r2', title: 'Chicken Stir Fry', description: 'Use up your chicken before it expires with this 20-min stir fry.',
+      cuisine: 'Asian', difficulty: 'easy', prep_time_min: 10, cook_time_min: 10, total_time_min: 20,
+      servings: 4, source_type: 'curated', source_url: null, image_url: null,
+      avg_rating: 4.8, rating_count: 521, tags: ['quick', 'one-pan'],
+      embedding: null, created_at: new Date().toISOString(),
+      instructions: [
+        { step: 1, instruction: 'Slice chicken into thin strips. Season with soy sauce.' },
+        { step: 2, instruction: 'Heat oil in wok over high heat. Sear chicken 5 min.', timer_minutes: 5 },
+        { step: 3, instruction: 'Add bell peppers and stir fry 3 more min.', timer_minutes: 3 },
+        { step: 4, instruction: 'Toss with sauce. Serve over rice.' },
+      ],
+      nutrition_per_serving: { calories: 320, protein_g: 32, carbs_g: 12, fat_g: 16, fiber_g: 3, sodium_mg: 580 },
+      ingredients: [
+        { recipe_id: 'r2', ingredient_id: 'ing-chicken', quantity: 1, unit: 'lb', preparation: 'sliced', is_optional: false, substitute_ingredient_ids: null, ingredient: baseIng('ing-chicken', 'Chicken Breast') },
+        { recipe_id: 'r2', ingredient_id: 'ing-pepper', quantity: 2, unit: 'whole', preparation: 'sliced', is_optional: false, substitute_ingredient_ids: null, ingredient: baseIng('ing-pepper', 'Red Bell Pepper') },
+      ],
+    },
+    {
+      id: 'r3', title: 'Strawberry Yogurt Parfait', description: 'Rescue strawberries before they spoil with this 5-minute breakfast.',
+      cuisine: 'American', difficulty: 'easy', prep_time_min: 5, cook_time_min: 0, total_time_min: 5,
+      servings: 2, source_type: 'curated', source_url: null, image_url: null,
+      avg_rating: 4.5, rating_count: 198, tags: ['no-cook', 'breakfast', 'quick'],
+      embedding: null, created_at: new Date().toISOString(),
+      instructions: [
+        { step: 1, instruction: 'Slice strawberries.' },
+        { step: 2, instruction: 'Layer yogurt, berries, granola in a glass.' },
+        { step: 3, instruction: 'Drizzle with honey if desired.' },
+      ],
+      nutrition_per_serving: { calories: 220, protein_g: 14, carbs_g: 32, fat_g: 4, fiber_g: 5, sodium_mg: 80 },
+      ingredients: [
+        { recipe_id: 'r3', ingredient_id: 'ing-strawberries', quantity: 1, unit: 'cup', preparation: 'sliced', is_optional: false, substitute_ingredient_ids: null, ingredient: baseIng('ing-strawberries', 'Strawberries') },
+        { recipe_id: 'r3', ingredient_id: 'ing-yogurt', quantity: 2, unit: 'cups', preparation: null, is_optional: false, substitute_ingredient_ids: null, ingredient: baseIng('ing-yogurt', 'Greek Yogurt') },
+      ],
+    },
+    {
+      id: 'r4', title: 'French Toast', description: 'A weekend classic that uses up bread before it goes stale.',
+      cuisine: 'American', difficulty: 'easy', prep_time_min: 5, cook_time_min: 10, total_time_min: 15,
+      servings: 2, source_type: 'curated', source_url: null, image_url: null,
+      avg_rating: 4.7, rating_count: 412, tags: ['breakfast', 'quick'],
+      embedding: null, created_at: new Date().toISOString(),
+      instructions: [
+        { step: 1, instruction: 'Whisk 3 eggs with milk, cinnamon, and vanilla in a bowl.' },
+        { step: 2, instruction: 'Soak bread slices for 30 sec each side.' },
+        { step: 3, instruction: 'Cook in butter on medium heat, 2-3 min per side.', timer_minutes: 6 },
+        { step: 4, instruction: 'Serve with maple syrup and powdered sugar.' },
+      ],
+      nutrition_per_serving: { calories: 285, protein_g: 12, carbs_g: 32, fat_g: 12, fiber_g: 2, sodium_mg: 320 },
+      ingredients: [
+        { recipe_id: 'r4', ingredient_id: 'ing-bread', quantity: 4, unit: 'slices', preparation: null, is_optional: false, substitute_ingredient_ids: null, ingredient: baseIng('ing-bread', 'Sourdough Bread') },
+        { recipe_id: 'r4', ingredient_id: 'ing-eggs', quantity: 3, unit: 'whole', preparation: null, is_optional: false, substitute_ingredient_ids: null, ingredient: baseIng('ing-eggs', 'Eggs') },
+        { recipe_id: 'r4', ingredient_id: 'ing-milk', quantity: 0.5, unit: 'cup', preparation: null, is_optional: false, substitute_ingredient_ids: null, ingredient: baseIng('ing-milk', 'Milk') },
+      ],
+    },
+    {
+      id: 'r5', title: 'Caprese Salad', description: 'Simple Italian salad - just three ingredients.',
+      cuisine: 'Italian', difficulty: 'easy', prep_time_min: 5, cook_time_min: 0, total_time_min: 5,
+      servings: 2, source_type: 'curated', source_url: null, image_url: null,
+      avg_rating: 4.4, rating_count: 156, tags: ['no-cook', 'vegetarian'],
+      embedding: null, created_at: new Date().toISOString(),
+      instructions: [
+        { step: 1, instruction: 'Slice tomatoes and mozzarella.' },
+        { step: 2, instruction: 'Layer on plate with basil leaves.' },
+        { step: 3, instruction: 'Drizzle olive oil and balsamic. Season with salt.' },
+      ],
+      nutrition_per_serving: { calories: 285, protein_g: 14, carbs_g: 8, fat_g: 22, fiber_g: 2, sodium_mg: 380 },
+      ingredients: [
+        { recipe_id: 'r5', ingredient_id: 'ing-tomato', quantity: 2, unit: 'whole', preparation: 'sliced', is_optional: false, substitute_ingredient_ids: null, ingredient: baseIng('ing-tomato', 'Tomato') },
+        { recipe_id: 'r5', ingredient_id: 'ing-mozzarella', quantity: 1, unit: 'ball', preparation: 'sliced', is_optional: false, substitute_ingredient_ids: null, ingredient: baseIng('ing-mozzarella', 'Mozzarella') },
+      ],
+    },
+    {
+      id: 'r6', title: 'Veggie Pasta Primavera', description: 'A 25-min pasta loaded with whatever veggies you have.',
+      cuisine: 'Italian', difficulty: 'medium', prep_time_min: 10, cook_time_min: 15, total_time_min: 25,
+      servings: 4, source_type: 'curated', source_url: null, image_url: null,
+      avg_rating: 4.5, rating_count: 287, tags: ['vegetarian', 'pasta'],
+      embedding: null, created_at: new Date().toISOString(),
+      instructions: [
+        { step: 1, instruction: 'Boil pasta to package directions.', timer_minutes: 10 },
+        { step: 2, instruction: 'Sauté chopped peppers, spinach, and garlic in olive oil.', timer_minutes: 5 },
+        { step: 3, instruction: 'Toss pasta with veggies and parmesan cheese.' },
+      ],
+      nutrition_per_serving: { calories: 410, protein_g: 14, carbs_g: 65, fat_g: 12, fiber_g: 5, sodium_mg: 380 },
+      ingredients: [
+        { recipe_id: 'r6', ingredient_id: 'ing-pasta', quantity: 1, unit: 'lb', preparation: null, is_optional: false, substitute_ingredient_ids: null, ingredient: baseIng('ing-pasta', 'Pasta') },
+        { recipe_id: 'r6', ingredient_id: 'ing-spinach', quantity: 1, unit: 'cup', preparation: null, is_optional: false, substitute_ingredient_ids: null, ingredient: baseIng('ing-spinach', 'Baby Spinach') },
+        { recipe_id: 'r6', ingredient_id: 'ing-pepper', quantity: 1, unit: 'whole', preparation: 'diced', is_optional: false, substitute_ingredient_ids: null, ingredient: baseIng('ing-pepper', 'Red Bell Pepper') },
+      ],
+    },
+  ];
+}
+
 export const useRecipeStore = create<RecipeState>((set, get) => ({
-  recipes: [],
+  recipes: getDemoRecipes(),
   rankedRecipes: [],
   cookNowRecipes: [],
   almostThereRecipes: [],

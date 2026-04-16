@@ -23,6 +23,33 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   isOnboarded: false,
 
   initialize: async () => {
+    // Demo mode: if no real Supabase URL, set a demo user so the app is browsable
+    const isDemoMode = !process.env.EXPO_PUBLIC_SUPABASE_URL ||
+      process.env.EXPO_PUBLIC_SUPABASE_URL.includes('your-project');
+
+    if (isDemoMode) {
+      set({
+        session: { user: { id: 'demo-user-id' } } as any,
+        user: {
+          id: 'demo-user-id',
+          email: 'demo@freshscan.app',
+          display_name: 'Demo User',
+          auth_provider: 'demo',
+          avatar_url: '',
+          household_id: null,
+          dietary_profile: { allergies: [], intolerances: [], diet_type: null, calorie_target: null, macro_split: null },
+          notification_preferences: null,
+          onboarding_completed: true,
+          subscription_tier: 'Pro',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        },
+        isOnboarded: true,
+        isLoading: false,
+      });
+      return;
+    }
+
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {

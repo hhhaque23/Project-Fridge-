@@ -26,8 +26,49 @@ interface InventoryState {
   getExpiringItems: () => InventoryItem[];
 }
 
+function getDemoItems(): InventoryItem[] {
+  const today = new Date();
+  const daysFromNow = (n: number) => {
+    const d = new Date(today);
+    d.setDate(d.getDate() + n);
+    return d.toISOString().split('T')[0];
+  };
+  const baseIngredient = (name: string, category: any, fridge = 7, freezer = 180) => ({
+    id: `ing-${name.toLowerCase()}`,
+    name,
+    category,
+    subcategory: '',
+    aliases: [],
+    default_shelf_life_fridge_days: fridge,
+    default_shelf_life_freezer_days: freezer,
+    default_shelf_life_pantry_days: 14,
+    default_shelf_life_opened_days: 4,
+    storage_tips: '',
+    ethylene_producer: false,
+    ethylene_sensitive: false,
+    common_substitutes: [],
+    usda_fdc_id: null,
+    barcode_ids: [],
+    embedding: null,
+  });
+
+  const demos: InventoryItem[] = [
+    { id: '1', household_id: 'demo', ingredient_id: 'ing-spinach', storage_location: 'crisper', quantity_text: '1 bag', quantity_numeric: 1, is_opened: true, expiry_date: daysFromNow(1), original_expiry_date: daysFromNow(7), purchase_date: daysFromNow(-5), purchase_price: 3.99, purchased_by: null, source: 'vision_scan', confidence_score: 88, photo_url: null, status: 'expiring_soon', frozen_to_save: null, notes: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), ingredient: baseIngredient('Baby Spinach', 'Produce', 5) },
+    { id: '2', household_id: 'demo', ingredient_id: 'ing-eggs', storage_location: 'fridge_door', quantity_text: '8 remaining', quantity_numeric: 8, is_opened: true, expiry_date: daysFromNow(14), original_expiry_date: daysFromNow(21), purchase_date: daysFromNow(-7), purchase_price: 5.49, purchased_by: null, source: 'vision_scan', confidence_score: 92, photo_url: null, status: 'fresh', frozen_to_save: null, notes: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), ingredient: baseIngredient('Eggs', 'Protein', 21) },
+    { id: '3', household_id: 'demo', ingredient_id: 'ing-milk', storage_location: 'fridge_door', quantity_text: '1 gallon, 3/4 full', quantity_numeric: 0.75, is_opened: true, expiry_date: daysFromNow(2), original_expiry_date: daysFromNow(10), purchase_date: daysFromNow(-8), purchase_price: 4.29, purchased_by: null, source: 'vision_scan', confidence_score: 95, photo_url: null, status: 'expiring_soon', frozen_to_save: null, notes: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), ingredient: baseIngredient('Whole Milk', 'Dairy', 10) },
+    { id: '4', household_id: 'demo', ingredient_id: 'ing-chicken', storage_location: 'fridge_middle', quantity_text: '1 lb pack', quantity_numeric: 1, is_opened: false, expiry_date: daysFromNow(2), original_expiry_date: daysFromNow(3), purchase_date: daysFromNow(-1), purchase_price: 8.99, purchased_by: null, source: 'receipt', confidence_score: 100, photo_url: null, status: 'expiring_soon', frozen_to_save: null, notes: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), ingredient: baseIngredient('Chicken Breast', 'Protein', 3, 270) },
+    { id: '5', household_id: 'demo', ingredient_id: 'ing-cheese', storage_location: 'fridge_middle', quantity_text: '1 block', quantity_numeric: 1, is_opened: true, expiry_date: daysFromNow(10), original_expiry_date: daysFromNow(21), purchase_date: daysFromNow(-3), purchase_price: 6.99, purchased_by: null, source: 'barcode', confidence_score: 100, photo_url: null, status: 'fresh', frozen_to_save: null, notes: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), ingredient: baseIngredient('Cheddar Cheese', 'Dairy', 21) },
+    { id: '6', household_id: 'demo', ingredient_id: 'ing-pepper', storage_location: 'crisper', quantity_text: '2', quantity_numeric: 2, is_opened: false, expiry_date: daysFromNow(8), original_expiry_date: daysFromNow(10), purchase_date: daysFromNow(-2), purchase_price: 2.5, purchased_by: null, source: 'manual', confidence_score: null, photo_url: null, status: 'fresh', frozen_to_save: null, notes: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), ingredient: baseIngredient('Red Bell Pepper', 'Produce', 10) },
+    { id: '7', household_id: 'demo', ingredient_id: 'ing-yogurt', storage_location: 'fridge_top', quantity_text: '3 cups', quantity_numeric: 3, is_opened: false, expiry_date: daysFromNow(12), original_expiry_date: daysFromNow(14), purchase_date: daysFromNow(-2), purchase_price: 4.99, purchased_by: null, source: 'vision_scan', confidence_score: 87, photo_url: null, status: 'fresh', frozen_to_save: null, notes: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), ingredient: baseIngredient('Greek Yogurt', 'Dairy', 14) },
+    { id: '8', household_id: 'demo', ingredient_id: 'ing-bread', storage_location: 'pantry', quantity_text: '1 loaf', quantity_numeric: 1, is_opened: true, expiry_date: daysFromNow(3), original_expiry_date: daysFromNow(7), purchase_date: daysFromNow(-4), purchase_price: 3.49, purchased_by: null, source: 'manual', confidence_score: null, photo_url: null, status: 'expiring_soon', frozen_to_save: null, notes: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), ingredient: baseIngredient('Sourdough Bread', 'Grains and Bread', 7) },
+    { id: '9', household_id: 'demo', ingredient_id: 'ing-strawberries', storage_location: 'crisper', quantity_text: '1 container', quantity_numeric: 1, is_opened: false, expiry_date: daysFromNow(0), original_expiry_date: daysFromNow(5), purchase_date: daysFromNow(-5), purchase_price: 4.99, purchased_by: null, source: 'vision_scan', confidence_score: 82, photo_url: null, status: 'expiring_today', frozen_to_save: null, notes: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), ingredient: baseIngredient('Strawberries', 'Produce', 5) },
+    { id: '10', household_id: 'demo', ingredient_id: 'ing-frozen-peas', storage_location: 'freezer', quantity_text: '1 bag', quantity_numeric: 1, is_opened: false, expiry_date: daysFromNow(180), original_expiry_date: daysFromNow(180), purchase_date: daysFromNow(-30), purchase_price: 2.99, purchased_by: null, source: 'manual', confidence_score: null, photo_url: null, status: 'fresh', frozen_to_save: null, notes: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), ingredient: baseIngredient('Frozen Peas', 'Frozen', 7, 240) },
+  ];
+  return demos;
+}
+
 export const useInventoryStore = create<InventoryState>((set, get) => ({
-  items: [],
+  items: getDemoItems(),
   isLoading: false,
   filter: {
     location: 'all',
@@ -37,6 +78,11 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
   },
 
   fetchItems: async (householdId: string) => {
+    if (!householdId || householdId === 'demo') {
+      // Keep demo items
+      set({ isLoading: false });
+      return;
+    }
     set({ isLoading: true });
     const { data } = await supabase
       .from('inventory_items')
@@ -45,7 +91,7 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
       .not('status', 'in', '("consumed","wasted")')
       .order('expiry_date', { ascending: true });
 
-    set({ items: data || [], isLoading: false });
+    set({ items: data && data.length > 0 ? data : getDemoItems(), isLoading: false });
   },
 
   addItem: async (item: Partial<InventoryItem>) => {

@@ -29,24 +29,23 @@ export default function ProfileScreen() {
       title: 'Account',
       items: [
         { icon: 'user', label: 'Edit Profile', onPress: () => {} },
-        { icon: 'users', label: 'Household', subtitle: user?.household_id ? 'Manage members' : 'Create or join', onPress: () => {} },
+        { icon: 'users', label: 'Household', subtitle: user?.household_id ? 'Manage members' : 'Create or join', onPress: () => router.push('/household' as any) },
         { icon: 'bell', label: 'Notifications', onPress: () => {} },
       ],
     },
     {
-      title: 'Dietary',
+      title: 'Dietary & Planning',
       items: [
         { icon: 'heartbeat', label: 'Dietary Profile', subtitle: user?.dietary_profile?.diet_type || 'Not set', onPress: () => {} },
         { icon: 'exclamation-triangle', label: 'Allergies', subtitle: user?.dietary_profile?.allergies?.join(', ') || 'None', onPress: () => {} },
-        { icon: 'line-chart', label: 'Nutrition Goals', onPress: () => {} },
+        { icon: 'calendar', label: 'Meal Plan', subtitle: 'Weekly planner', onPress: () => router.push('/meal-plan' as any) },
       ],
     },
     {
       title: 'Insights',
       items: [
-        { icon: 'pie-chart', label: 'Waste Dashboard', onPress: () => {} },
-        { icon: 'dollar', label: 'Money Saved', onPress: () => {} },
-        { icon: 'bar-chart', label: 'Usage Patterns', onPress: () => {} },
+        { icon: 'pie-chart', label: 'Waste Dashboard', subtitle: 'Score, money saved, CO2 avoided', onPress: () => router.push('/waste-dashboard' as any) },
+        { icon: 'bar-chart', label: 'Usage Patterns', onPress: () => router.push('/waste-dashboard' as any) },
       ],
     },
     {
@@ -79,7 +78,7 @@ export default function ProfileScreen() {
         </View>
 
         {/* Waste score card */}
-        <View style={styles.wasteCard}>
+        <TouchableOpacity style={styles.wasteCard} onPress={() => router.push('/waste-dashboard' as any)}>
           <View style={styles.wasteRow}>
             <View style={styles.wasteStat}>
               <Text style={styles.wasteStatValue}>87%</Text>
@@ -96,7 +95,7 @@ export default function ProfileScreen() {
               <Text style={styles.wasteStatLabel}>CO2 avoided</Text>
             </View>
           </View>
-        </View>
+        </TouchableOpacity>
 
         {/* Settings sections */}
         {sections.map((section) => (

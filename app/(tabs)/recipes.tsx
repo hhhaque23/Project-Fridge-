@@ -17,18 +17,37 @@ import { useRecipeStore } from '@/stores/recipeStore';
 import { useInventoryStore } from '@/stores/inventoryStore';
 import { useAuthStore } from '@/stores/authStore';
 import { formatTimeMinutes } from '@/lib/helpers';
+import { generateRecipe } from '@/services/recipeGenerator';
 import type { Recipe } from '@/lib/types';
+import { Alert, ActivityIndicator } from 'react-native';
 
 const CUISINES = ['All', 'Italian', 'Mexican', 'Asian', 'American', 'Mediterranean', 'Indian'];
 
 export default function RecipesScreen() {
   const [searchText, setSearchText] = useState('');
   const [selectedCuisine, setSelectedCuisine] = useState('All');
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generatedRecipe, setGeneratedRecipe] = useState<Recipe | null>(null);
   const router = useRouter();
 
   const { recipes, rankedRecipes, cookNowRecipes, almostThereRecipes, fetchRecipes, rankRecipes, searchRecipes } = useRecipeStore();
   const items = useInventoryStore((s) => s.items);
   const user = useAuthStore((s) => s.user);
+
+  const handleGenerateRecipe = async () => {
+    setIsGenerating(true);
+    try {
+      const recipe = await generateRecipe(items, { prioritizeExpiring: true });
+      if (recipe) {
+        setGeneratedRecipe(recipe);
+      } else {
+        Alert.alert('Failed', 'Could not generate a recipe. Try again.');
+      }
+    } catch {
+      Alert.alert('Error', 'Recipe generation failed.');
+    }
+    setIsGenerating(false);
+  };
 
   useEffect(() => {
     fetchRecipes();
@@ -157,6 +176,67 @@ export default function RecipesScreen() {
               </View>
             )}
 
+            {/* AI Generate button */}
+            <TouchableOpacity
+              style={styles.aiGenerateBanner}
+              onPress={handleGenerateRecipe}
+              disabled={isGenerating}
+            >
+              <View style={styles.aiIconBox}>
+                {isGenerating ? (
+                  <ActivityIndicator color="#7C4DFF" />
+                ) : (
+                  <FontAwesome name="magic" size={18} color="#7C4DFF" />
+                )}
+              </View>
+              <View style={styles.aiTextBox}>
+                <Text style={styles.aiBannerTitle}>
+                  {isGenerating ? 'Generating recipe...' : 'AI Recipe from your fridge'}
+                </Text>
+                <Text style={styles.aiBannerSubtitle}>
+                  Custom recipe using items expiring soon
+                </Text>
+              </View>
+              <FontAwesome name="chevron-right" size={12} color="#999" />
+            </TouchableOpacity>
+
+            {/* Generated recipe preview */}
+            {generatedRecipe && (
+              <View style={styles.aiResultCard}>
+                <View style={styles.aiResultHeader}>
+                  <FontAwesome name="magic" size={14} color="#7C4DFF" />
+                  <Text style={styles.aiResultBadge}>AI-Generated</Text>
+                </View>
+                <Text style={styles.aiResultTitle}>{generatedRecipe.title}</Text>
+                <Text style={styles.aiResultDesc} numberOfLines={2}>
+                  {generatedRecipe.description}
+                </Text>
+                <View style={styles.aiResultMeta}>
+                  <Text style={styles.aiResultMetaText}>
+                    {formatTimeMinutes(generatedRecipe.total_time_min)}
+                  </Text>
+                  <Text style={styles.aiResultMetaText}>
+                    {generatedRecipe.servings} servings
+                  </Text>
+                  <Text style={styles.aiResultMetaText}>
+                    {generatedRecipe.ingredients?.length || 0} ingredients
+                  </Text>
+                </View>
+                <View style={styles.aiResultActions}>
+                  <TouchableOpacity
+                    style={styles.aiDismissButton}
+                    onPress={() => setGeneratedRecipe(null)}
+                  >
+                    <Text style={styles.aiDismissText}>Dismiss</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.aiViewButton} onPress={handleGenerateRecipe}>
+                    <FontAwesome name="refresh" size={12} color="#7C4DFF" />
+                    <Text style={styles.aiViewText}>Regenerate</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+
             {/* Cuisine filter */}
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.cuisineScroll} contentContainerStyle={styles.cuisineContainer}>
               {CUISINES.map((c) => (
@@ -221,6 +301,23 @@ const styles = StyleSheet.create({
   coverageBar: { flex: 1, height: 4, backgroundColor: '#E0E0E0', borderRadius: 2 },
   coverageFill: { height: 4, backgroundColor: Colors.brand.primaryLight, borderRadius: 2 },
   coverageText: { fontSize: 11, color: '#999' },
+  aiGenerateBanner: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F3E5F5', borderRadius: 14, padding: 14, marginHorizontal: 16, marginBottom: 12, gap: 12 },
+  aiIconBox: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' },
+  aiTextBox: { flex: 1 },
+  aiBannerTitle: { fontSize: 15, fontWeight: '700', color: '#1a1a1a' },
+  aiBannerSubtitle: { fontSize: 12, color: '#666', marginTop: 2 },
+  aiResultCard: { backgroundColor: '#fff', marginHorizontal: 16, marginBottom: 12, borderRadius: 14, padding: 16, borderWidth: 1, borderColor: '#E1BEE7' },
+  aiResultHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 },
+  aiResultBadge: { fontSize: 11, fontWeight: '700', color: '#7C4DFF', textTransform: 'uppercase' },
+  aiResultTitle: { fontSize: 17, fontWeight: '700', color: '#1a1a1a' },
+  aiResultDesc: { fontSize: 13, color: '#666', marginTop: 4, lineHeight: 18 },
+  aiResultMeta: { flexDirection: 'row', gap: 12, marginTop: 8 },
+  aiResultMetaText: { fontSize: 11, color: '#999', fontWeight: '500' },
+  aiResultActions: { flexDirection: 'row', gap: 10, marginTop: 12 },
+  aiDismissButton: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8, borderWidth: 1, borderColor: '#DDD' },
+  aiDismissText: { fontSize: 12, fontWeight: '600', color: '#666' },
+  aiViewButton: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8, backgroundColor: '#F3E5F5' },
+  aiViewText: { fontSize: 12, fontWeight: '600', color: '#7C4DFF' },
   cuisineScroll: { marginBottom: 8 },
   cuisineContainer: { paddingHorizontal: 16, gap: 8 },
   cuisineChip: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, backgroundColor: '#F5F5F5' },

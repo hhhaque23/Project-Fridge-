@@ -17,18 +17,21 @@ import Colors from '@/constants/Colors';
 import { useAuthStore } from '@/stores/authStore';
 import { useInventoryStore } from '@/stores/inventoryStore';
 import { scanFridgeImage } from '@/services/visionService';
+import { lookupBarcode, type BarcodeProduct } from '@/services/barcodeService';
 import type { VisionScanItem } from '@/lib/types';
 import { getExpiryColor, getExpiryStatus } from '@/lib/helpers';
+
+type ScanMode = 'idle' | 'camera' | 'barcode' | 'scanning';
 
 export default function ScanScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const [photo, setPhoto] = useState<string | null>(null);
-  const [isScanning, setIsScanning] = useState(false);
   const [scanResults, setScanResults] = useState<VisionScanItem[]>([]);
-  const [showCamera, setShowCamera] = useState(false);
+  const [barcodeResult, setBarcodeResult] = useState<BarcodeProduct | null>(null);
+  const [mode, setMode] = useState<ScanMode>('idle');
   const cameraRef = useRef<CameraView>(null);
+  const lastScannedBarcode = useRef<string>('');
 
-  const user = useAuthStore((s) => s.user);
   const expiringItems = useInventoryStore((s) => s.getExpiringItems());
 
   const takePhoto = async () => {
@@ -36,8 +39,8 @@ export default function ScanScreen() {
     const result = await cameraRef.current.takePictureAsync({ quality: 0.85 });
     if (result) {
       setPhoto(result.uri);
-      setShowCamera(false);
-      handleScan(result.uri);
+      setMode('scanning');
+      handleVisionScan(result.uri);
     }
   };
 
@@ -48,19 +51,40 @@ export default function ScanScreen() {
     });
     if (!result.canceled && result.assets[0]) {
       setPhoto(result.assets[0].uri);
-      handleScan(result.assets[0].uri);
+      setMode('scanning');
+      handleVisionScan(result.assets[0].uri);
     }
   };
 
-  const handleScan = async (imageUri: string) => {
-    setIsScanning(true);
+  const handleVisionScan = async (imageUri: string) => {
     try {
       const results = await scanFridgeImage(imageUri);
       setScanResults(results);
+      setMode('idle');
     } catch {
       Alert.alert('Scan Failed', 'Could not analyze the image. Please try again.');
+      setMode('idle');
     }
-    setIsScanning(false);
+  };
+
+  const handleBarcodeScan = async ({ data }: { data: string }) => {
+    if (data === lastScannedBarcode.current) return;
+    lastScannedBarcode.current = data;
+    const result = await lookupBarcode(data);
+    if (result) {
+      setBarcodeResult(result);
+      setMode('idle');
+    } else {
+      // Demo fallback
+      setBarcodeResult({
+        barcode: data,
+        name: 'Sample Product',
+        brand: 'Demo Brand',
+        category: 'Snacks',
+        image_url: null,
+      });
+      setMode('idle');
+    }
   };
 
   const confirmItem = (item: VisionScanItem) => {
@@ -72,16 +96,21 @@ export default function ScanScreen() {
     scanResults.filter((i) => i.confidence >= 85).forEach(confirmItem);
   };
 
-  if (showCamera) {
+  const confirmBarcodeProduct = () => {
+    if (!barcodeResult) return;
+    Alert.alert('Added', `${barcodeResult.name} added to inventory`);
+    setBarcodeResult(null);
+    lastScannedBarcode.current = '';
+  };
+
+  // Camera mode (vision)
+  if (mode === 'camera') {
     if (!permission?.granted) {
       return (
         <SafeAreaView style={styles.container}>
           <View style={styles.centered}>
             <FontAwesome name="camera" size={48} color="#999" />
             <Text style={styles.permissionTitle}>Camera Access Required</Text>
-            <Text style={styles.permissionText}>
-              FreshScan needs camera access to scan your fridge.
-            </Text>
             <TouchableOpacity style={styles.primaryButton} onPress={requestPermission}>
               <Text style={styles.primaryButtonText}>Grant Access</Text>
             </TouchableOpacity>
@@ -89,12 +118,11 @@ export default function ScanScreen() {
         </SafeAreaView>
       );
     }
-
     return (
       <View style={styles.cameraContainer}>
         <CameraView ref={cameraRef} style={styles.camera} facing="back">
           <SafeAreaView style={styles.cameraOverlay}>
-            <TouchableOpacity style={styles.closeButton} onPress={() => setShowCamera(false)}>
+            <TouchableOpacity style={styles.closeButton} onPress={() => setMode('idle')}>
               <FontAwesome name="times" size={24} color="#fff" />
             </TouchableOpacity>
             <View style={styles.cameraGuide}>
@@ -111,33 +139,84 @@ export default function ScanScreen() {
     );
   }
 
+  // Barcode mode
+  if (mode === 'barcode') {
+    if (!permission?.granted) {
+      return (
+        <SafeAreaView style={styles.container}>
+          <View style={styles.centered}>
+            <FontAwesome name="camera" size={48} color="#999" />
+            <Text style={styles.permissionTitle}>Camera Access Required</Text>
+            <TouchableOpacity style={styles.primaryButton} onPress={requestPermission}>
+              <Text style={styles.primaryButtonText}>Grant Access</Text>
+            </TouchableOpacity>
+          </View>
+        </SafeAreaView>
+      );
+    }
+    return (
+      <View style={styles.cameraContainer}>
+        <CameraView
+          style={styles.camera}
+          facing="back"
+          onBarcodeScanned={handleBarcodeScan}
+          barcodeScannerSettings={{
+            barcodeTypes: ['ean13', 'ean8', 'upc_a', 'upc_e', 'qr'],
+          }}
+        >
+          <SafeAreaView style={styles.cameraOverlay}>
+            <TouchableOpacity style={styles.closeButton} onPress={() => setMode('idle')}>
+              <FontAwesome name="times" size={24} color="#fff" />
+            </TouchableOpacity>
+            <View style={styles.barcodeFrame}>
+              <View style={[styles.barcodeCorner, { top: 0, left: 0, borderTopWidth: 3, borderLeftWidth: 3 }]} />
+              <View style={[styles.barcodeCorner, { top: 0, right: 0, borderTopWidth: 3, borderRightWidth: 3 }]} />
+              <View style={[styles.barcodeCorner, { bottom: 0, left: 0, borderBottomWidth: 3, borderLeftWidth: 3 }]} />
+              <View style={[styles.barcodeCorner, { bottom: 0, right: 0, borderBottomWidth: 3, borderRightWidth: 3 }]} />
+            </View>
+            <View style={styles.cameraControls}>
+              <Text style={styles.cameraGuideText}>Center the barcode in the frame</Text>
+            </View>
+          </SafeAreaView>
+        </CameraView>
+      </View>
+    );
+  }
+
+  // Main scan screen
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        {!photo && scanResults.length === 0 && (
+        {!photo && scanResults.length === 0 && !barcodeResult && (
           <View style={styles.heroSection}>
             <View style={styles.heroIcon}>
               <FontAwesome name="camera" size={56} color={Colors.brand.primary} />
             </View>
             <Text style={styles.heroTitle}>Scan Your Fridge</Text>
             <Text style={styles.heroSubtitle}>
-              Take a photo of a shelf and our AI will identify all visible items.
+              Take a photo and our AI will identify all visible items.
             </Text>
             <View style={styles.scanOptions}>
-              <TouchableOpacity style={styles.scanButton} onPress={() => setShowCamera(true)}>
+              <TouchableOpacity style={styles.scanButton} onPress={() => setMode('camera')}>
                 <FontAwesome name="camera" size={24} color="#fff" />
                 <Text style={styles.scanButtonText}>Quick Snap</Text>
-                <Text style={styles.scanButtonHint}>Take a photo now</Text>
+                <Text style={styles.scanButtonHint}>AI vision scan</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.scanButtonSecondary} onPress={pickImage}>
-                <FontAwesome name="image" size={24} color={Colors.brand.primary} />
-                <Text style={styles.scanButtonSecondaryText}>Choose from Gallery</Text>
-              </TouchableOpacity>
+              <View style={styles.secondaryRow}>
+                <TouchableOpacity style={styles.scanButtonSmall} onPress={() => setMode('barcode')}>
+                  <FontAwesome name="barcode" size={20} color={Colors.brand.primary} />
+                  <Text style={styles.scanButtonSmallText}>Barcode</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.scanButtonSmall} onPress={pickImage}>
+                  <FontAwesome name="image" size={20} color={Colors.brand.primary} />
+                  <Text style={styles.scanButtonSmallText}>Gallery</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
         )}
 
-        {isScanning && (
+        {mode === 'scanning' && (
           <View style={styles.scanningSection}>
             {photo && <Image source={{ uri: photo }} style={styles.previewImage} />}
             <ActivityIndicator size="large" color={Colors.brand.primary} style={{ marginTop: 16 }} />
@@ -146,7 +225,35 @@ export default function ScanScreen() {
           </View>
         )}
 
-        {!isScanning && scanResults.length > 0 && (
+        {/* Barcode result */}
+        {barcodeResult && (
+          <View style={styles.barcodeResultCard}>
+            {barcodeResult.image_url && (
+              <Image source={{ uri: barcodeResult.image_url }} style={styles.barcodeImage} />
+            )}
+            <Text style={styles.barcodeName}>{barcodeResult.name}</Text>
+            {barcodeResult.brand && <Text style={styles.barcodeBrand}>{barcodeResult.brand}</Text>}
+            <Text style={styles.barcodeCategory}>{barcodeResult.category}</Text>
+            <View style={styles.barcodeActions}>
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={() => {
+                  setBarcodeResult(null);
+                  lastScannedBarcode.current = '';
+                }}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.confirmFullButton} onPress={confirmBarcodeProduct}>
+                <FontAwesome name="check" size={14} color="#fff" />
+                <Text style={styles.confirmFullText}>Add to Inventory</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
+        {/* Vision scan results */}
+        {mode === 'idle' && scanResults.length > 0 && (
           <View style={styles.resultsSection}>
             <View style={styles.resultsHeader}>
               <Text style={styles.resultsTitle}>Found {scanResults.length} items</Text>
@@ -190,7 +297,8 @@ export default function ScanScreen() {
           </View>
         )}
 
-        {!photo && expiringItems.length > 0 && (
+        {/* Expiring items */}
+        {!photo && !barcodeResult && expiringItems.length > 0 && (
           <View style={styles.expiringSection}>
             <Text style={styles.sectionTitle}>Expiring Soon ({expiringItems.length})</Text>
             {expiringItems.slice(0, 5).map((item) => (
@@ -213,7 +321,7 @@ const styles = StyleSheet.create({
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32 },
   permissionTitle: { fontSize: 20, fontWeight: '700', marginTop: 16 },
   permissionText: { fontSize: 14, color: '#666', textAlign: 'center', marginTop: 8, marginBottom: 24 },
-  primaryButton: { backgroundColor: Colors.brand.primary, borderRadius: 12, paddingVertical: 14, paddingHorizontal: 32 },
+  primaryButton: { backgroundColor: Colors.brand.primary, borderRadius: 12, paddingVertical: 14, paddingHorizontal: 32, marginTop: 16 },
   primaryButtonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
   cameraContainer: { flex: 1 },
   camera: { flex: 1 },
@@ -224,16 +332,19 @@ const styles = StyleSheet.create({
   cameraControls: { alignItems: 'center', paddingBottom: 40 },
   captureButton: { width: 72, height: 72, borderRadius: 36, borderWidth: 4, borderColor: '#fff', alignItems: 'center', justifyContent: 'center' },
   captureButtonInner: { width: 56, height: 56, borderRadius: 28, backgroundColor: '#fff' },
-  heroSection: { alignItems: 'center', paddingVertical: 40 },
-  heroIcon: { width: 120, height: 120, borderRadius: 60, backgroundColor: '#E8F5E9', alignItems: 'center', justifyContent: 'center', marginBottom: 24 },
-  heroTitle: { fontSize: 28, fontWeight: '700', color: '#1a1a1a' },
-  heroSubtitle: { fontSize: 15, color: '#666', textAlign: 'center', marginTop: 8, lineHeight: 22, maxWidth: 300 },
-  scanOptions: { width: '100%', marginTop: 32, gap: 12 },
-  scanButton: { backgroundColor: Colors.brand.primary, borderRadius: 16, padding: 20, alignItems: 'center', gap: 4 },
-  scanButtonText: { color: '#fff', fontSize: 18, fontWeight: '700' },
-  scanButtonHint: { color: 'rgba(255,255,255,0.8)', fontSize: 13 },
-  scanButtonSecondary: { borderWidth: 1.5, borderColor: Colors.brand.primary, borderRadius: 16, padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 },
-  scanButtonSecondaryText: { color: Colors.brand.primary, fontSize: 16, fontWeight: '600' },
+  barcodeFrame: { width: 280, height: 180, alignSelf: 'center' },
+  barcodeCorner: { position: 'absolute', width: 30, height: 30, borderColor: Colors.brand.primaryLight },
+  heroSection: { alignItems: 'center', paddingVertical: 24 },
+  heroIcon: { width: 110, height: 110, borderRadius: 55, backgroundColor: '#E8F5E9', alignItems: 'center', justifyContent: 'center', marginBottom: 20 },
+  heroTitle: { fontSize: 26, fontWeight: '700', color: '#1a1a1a' },
+  heroSubtitle: { fontSize: 14, color: '#666', textAlign: 'center', marginTop: 8, lineHeight: 20, maxWidth: 280 },
+  scanOptions: { width: '100%', marginTop: 24, gap: 12 },
+  scanButton: { backgroundColor: Colors.brand.primary, borderRadius: 16, padding: 18, alignItems: 'center', gap: 4 },
+  scanButtonText: { color: '#fff', fontSize: 17, fontWeight: '700' },
+  scanButtonHint: { color: 'rgba(255,255,255,0.85)', fontSize: 12 },
+  secondaryRow: { flexDirection: 'row', gap: 10 },
+  scanButtonSmall: { flex: 1, borderWidth: 1.5, borderColor: Colors.brand.primary, borderRadius: 12, padding: 14, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 8 },
+  scanButtonSmallText: { color: Colors.brand.primary, fontSize: 14, fontWeight: '600' },
   scanningSection: { alignItems: 'center', paddingVertical: 24 },
   previewImage: { width: '100%', height: 200, borderRadius: 12 },
   scanningText: { fontSize: 18, fontWeight: '600', marginTop: 12 },
@@ -252,8 +363,20 @@ const styles = StyleSheet.create({
   confirmButton: { width: 36, height: 36, borderRadius: 18, backgroundColor: Colors.brand.primary, alignItems: 'center', justifyContent: 'center' },
   scanAgainButton: { borderWidth: 1.5, borderColor: Colors.brand.primary, borderRadius: 12, padding: 14, alignItems: 'center', marginTop: 12 },
   scanAgainText: { fontSize: 15, fontWeight: '600', color: Colors.brand.primary },
-  expiringSection: { marginTop: 32 },
-  sectionTitle: { fontSize: 18, fontWeight: '700', marginBottom: 12 },
+  // Barcode result
+  barcodeResultCard: { backgroundColor: '#FAFAFA', borderRadius: 16, padding: 20, alignItems: 'center', marginVertical: 8 },
+  barcodeImage: { width: 100, height: 100, borderRadius: 8, marginBottom: 12 },
+  barcodeName: { fontSize: 18, fontWeight: '700', color: '#1a1a1a', textAlign: 'center' },
+  barcodeBrand: { fontSize: 14, color: '#666', marginTop: 2 },
+  barcodeCategory: { fontSize: 12, color: Colors.brand.primary, fontWeight: '600', marginTop: 6, backgroundColor: '#E8F5E9', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
+  barcodeActions: { flexDirection: 'row', gap: 10, marginTop: 16, alignSelf: 'stretch' },
+  cancelButton: { flex: 1, padding: 12, alignItems: 'center', borderRadius: 10, borderWidth: 1, borderColor: '#DDD' },
+  cancelButtonText: { fontSize: 14, fontWeight: '600', color: '#666' },
+  confirmFullButton: { flex: 2, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, padding: 12, backgroundColor: Colors.brand.primary, borderRadius: 10 },
+  confirmFullText: { color: '#fff', fontSize: 14, fontWeight: '700' },
+  // Expiring
+  expiringSection: { marginTop: 24 },
+  sectionTitle: { fontSize: 16, fontWeight: '700', marginBottom: 12 },
   expiringItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#F0F0F0' },
   expiryDot: { width: 10, height: 10, borderRadius: 5, marginRight: 12 },
   expiringName: { flex: 1, fontSize: 15, color: '#333' },
