@@ -9,6 +9,8 @@ interface RecipeState {
   almostThereRecipes: Recipe[];
   isLoading: boolean;
 
+  hasInitializedDemo?: boolean;
+  loadDemoIfEmpty?: () => void;
   fetchRecipes: () => Promise<void>;
   rankRecipes: (inventoryItems: InventoryItem[]) => void;
   getRecipeById: (id: string) => Recipe | undefined;
@@ -205,21 +207,39 @@ function getDemoRecipes(): Recipe[] {
 }
 
 export const useRecipeStore = create<RecipeState>((set, get) => ({
-  recipes: getDemoRecipes(),
+  recipes: [],
   rankedRecipes: [],
   cookNowRecipes: [],
   almostThereRecipes: [],
   isLoading: false,
+  hasInitializedDemo: false,
+
+  loadDemoIfEmpty: () => {
+    const state = get();
+    if ((state as any).hasInitializedDemo) return;
+    const demos = getDemoRecipes();
+    set({ recipes: demos, hasInitializedDemo: true } as any);
+  },
 
   fetchRecipes: async () => {
     set({ isLoading: true });
-    const { data } = await supabase
-      .from('recipes')
-      .select('*, ingredients:recipe_ingredients(*, ingredient:ingredients(*))')
-      .order('avg_rating', { ascending: false })
-      .limit(200);
+    try {
+      const { data } = await supabase
+        .from('recipes')
+        .select('*, ingredients:recipe_ingredients(*, ingredient:ingredients(*))')
+        .order('avg_rating', { ascending: false })
+        .limit(200);
 
-    set({ recipes: data || [], isLoading: false });
+      // Don't wipe demo data if Supabase returns nothing (demo mode)
+      if (data && data.length > 0) {
+        set({ recipes: data, isLoading: false, hasInitializedDemo: true } as any);
+      } else {
+        // Fall back to demo recipes
+        set({ recipes: getDemoRecipes(), isLoading: false, hasInitializedDemo: true } as any);
+      }
+    } catch {
+      set({ recipes: getDemoRecipes(), isLoading: false, hasInitializedDemo: true } as any);
+    }
   },
 
   rankRecipes: (inventoryItems: InventoryItem[]) => {

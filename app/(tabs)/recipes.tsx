@@ -30,8 +30,16 @@ export default function RecipesScreen() {
   const [generatedRecipe, setGeneratedRecipe] = useState<Recipe | null>(null);
   const router = useRouter();
 
-  const { recipes, rankedRecipes, cookNowRecipes, almostThereRecipes, fetchRecipes, rankRecipes, searchRecipes } = useRecipeStore();
+  const recipes = useRecipeStore((s) => s.recipes);
+  const rankedRecipes = useRecipeStore((s) => s.rankedRecipes);
+  const cookNowRecipes = useRecipeStore((s) => s.cookNowRecipes);
+  const almostThereRecipes = useRecipeStore((s) => s.almostThereRecipes);
+  const fetchRecipes = useRecipeStore((s) => s.fetchRecipes);
+  const rankRecipes = useRecipeStore((s) => s.rankRecipes);
+  const searchRecipes = useRecipeStore((s) => s.searchRecipes);
+  const loadRecipeDemoIfEmpty = useRecipeStore((s) => (s as any).loadDemoIfEmpty as () => void);
   const items = useInventoryStore((s) => s.items);
+  const loadInvDemoIfEmpty = useInventoryStore((s) => s.loadDemoIfEmpty);
   const user = useAuthStore((s) => s.user);
 
   const handleGenerateRecipe = async () => {
@@ -50,6 +58,9 @@ export default function RecipesScreen() {
   };
 
   useEffect(() => {
+    loadInvDemoIfEmpty();
+    if (loadRecipeDemoIfEmpty) loadRecipeDemoIfEmpty();
+    // Try to fetch real recipes (fall back to demo if Supabase unavailable)
     fetchRecipes();
   }, []);
 

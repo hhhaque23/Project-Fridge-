@@ -5,6 +5,7 @@ import type { InventoryItem, StorageLocation, InventoryStatus } from '@/lib/type
 interface InventoryState {
   items: InventoryItem[];
   isLoading: boolean;
+  hasInitializedDemo: boolean;
   filter: {
     location: StorageLocation | 'all';
     status: InventoryStatus | 'all';
@@ -13,6 +14,7 @@ interface InventoryState {
   };
 
   fetchItems: (householdId: string) => Promise<void>;
+  loadDemoIfEmpty: () => void;
   addItem: (item: Partial<InventoryItem>) => Promise<InventoryItem | null>;
   updateItem: (id: string, updates: Partial<InventoryItem>) => Promise<void>;
   deleteItem: (id: string) => Promise<void>;
@@ -23,18 +25,21 @@ interface InventoryState {
   markWasted: (id: string, reason: string) => Promise<void>;
   setFilter: (filter: Partial<InventoryState['filter']>) => void;
   getFilteredItems: () => InventoryItem[];
-  getExpiringItems: () => InventoryItem[];
 }
 
 function getDemoItems(): InventoryItem[] {
+  // Build dates from a stable reference (today at 00:00 client local time, computed once on client)
   const today = new Date();
-  const daysFromNow = (n: number) => {
+  today.setHours(0, 0, 0, 0);
+  const isoDate = (n: number) => {
     const d = new Date(today);
     d.setDate(d.getDate() + n);
     return d.toISOString().split('T')[0];
   };
+  const isoTs = today.toISOString();
+
   const baseIngredient = (name: string, category: any, fridge = 7, freezer = 180) => ({
-    id: `ing-${name.toLowerCase()}`,
+    id: `ing-${name.toLowerCase().replace(/\s+/g, '-')}`,
     name,
     category,
     subcategory: '',
@@ -52,24 +57,61 @@ function getDemoItems(): InventoryItem[] {
     embedding: null,
   });
 
-  const demos: InventoryItem[] = [
-    { id: '1', household_id: 'demo', ingredient_id: 'ing-spinach', storage_location: 'crisper', quantity_text: '1 bag', quantity_numeric: 1, is_opened: true, expiry_date: daysFromNow(1), original_expiry_date: daysFromNow(7), purchase_date: daysFromNow(-5), purchase_price: 3.99, purchased_by: null, source: 'vision_scan', confidence_score: 88, photo_url: null, status: 'expiring_soon', frozen_to_save: null, notes: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), ingredient: baseIngredient('Baby Spinach', 'Produce', 5) },
-    { id: '2', household_id: 'demo', ingredient_id: 'ing-eggs', storage_location: 'fridge_door', quantity_text: '8 remaining', quantity_numeric: 8, is_opened: true, expiry_date: daysFromNow(14), original_expiry_date: daysFromNow(21), purchase_date: daysFromNow(-7), purchase_price: 5.49, purchased_by: null, source: 'vision_scan', confidence_score: 92, photo_url: null, status: 'fresh', frozen_to_save: null, notes: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), ingredient: baseIngredient('Eggs', 'Protein', 21) },
-    { id: '3', household_id: 'demo', ingredient_id: 'ing-milk', storage_location: 'fridge_door', quantity_text: '1 gallon, 3/4 full', quantity_numeric: 0.75, is_opened: true, expiry_date: daysFromNow(2), original_expiry_date: daysFromNow(10), purchase_date: daysFromNow(-8), purchase_price: 4.29, purchased_by: null, source: 'vision_scan', confidence_score: 95, photo_url: null, status: 'expiring_soon', frozen_to_save: null, notes: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), ingredient: baseIngredient('Whole Milk', 'Dairy', 10) },
-    { id: '4', household_id: 'demo', ingredient_id: 'ing-chicken', storage_location: 'fridge_middle', quantity_text: '1 lb pack', quantity_numeric: 1, is_opened: false, expiry_date: daysFromNow(2), original_expiry_date: daysFromNow(3), purchase_date: daysFromNow(-1), purchase_price: 8.99, purchased_by: null, source: 'receipt', confidence_score: 100, photo_url: null, status: 'expiring_soon', frozen_to_save: null, notes: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), ingredient: baseIngredient('Chicken Breast', 'Protein', 3, 270) },
-    { id: '5', household_id: 'demo', ingredient_id: 'ing-cheese', storage_location: 'fridge_middle', quantity_text: '1 block', quantity_numeric: 1, is_opened: true, expiry_date: daysFromNow(10), original_expiry_date: daysFromNow(21), purchase_date: daysFromNow(-3), purchase_price: 6.99, purchased_by: null, source: 'barcode', confidence_score: 100, photo_url: null, status: 'fresh', frozen_to_save: null, notes: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), ingredient: baseIngredient('Cheddar Cheese', 'Dairy', 21) },
-    { id: '6', household_id: 'demo', ingredient_id: 'ing-pepper', storage_location: 'crisper', quantity_text: '2', quantity_numeric: 2, is_opened: false, expiry_date: daysFromNow(8), original_expiry_date: daysFromNow(10), purchase_date: daysFromNow(-2), purchase_price: 2.5, purchased_by: null, source: 'manual', confidence_score: null, photo_url: null, status: 'fresh', frozen_to_save: null, notes: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), ingredient: baseIngredient('Red Bell Pepper', 'Produce', 10) },
-    { id: '7', household_id: 'demo', ingredient_id: 'ing-yogurt', storage_location: 'fridge_top', quantity_text: '3 cups', quantity_numeric: 3, is_opened: false, expiry_date: daysFromNow(12), original_expiry_date: daysFromNow(14), purchase_date: daysFromNow(-2), purchase_price: 4.99, purchased_by: null, source: 'vision_scan', confidence_score: 87, photo_url: null, status: 'fresh', frozen_to_save: null, notes: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), ingredient: baseIngredient('Greek Yogurt', 'Dairy', 14) },
-    { id: '8', household_id: 'demo', ingredient_id: 'ing-bread', storage_location: 'pantry', quantity_text: '1 loaf', quantity_numeric: 1, is_opened: true, expiry_date: daysFromNow(3), original_expiry_date: daysFromNow(7), purchase_date: daysFromNow(-4), purchase_price: 3.49, purchased_by: null, source: 'manual', confidence_score: null, photo_url: null, status: 'expiring_soon', frozen_to_save: null, notes: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), ingredient: baseIngredient('Sourdough Bread', 'Grains and Bread', 7) },
-    { id: '9', household_id: 'demo', ingredient_id: 'ing-strawberries', storage_location: 'crisper', quantity_text: '1 container', quantity_numeric: 1, is_opened: false, expiry_date: daysFromNow(0), original_expiry_date: daysFromNow(5), purchase_date: daysFromNow(-5), purchase_price: 4.99, purchased_by: null, source: 'vision_scan', confidence_score: 82, photo_url: null, status: 'expiring_today', frozen_to_save: null, notes: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), ingredient: baseIngredient('Strawberries', 'Produce', 5) },
-    { id: '10', household_id: 'demo', ingredient_id: 'ing-frozen-peas', storage_location: 'freezer', quantity_text: '1 bag', quantity_numeric: 1, is_opened: false, expiry_date: daysFromNow(180), original_expiry_date: daysFromNow(180), purchase_date: daysFromNow(-30), purchase_price: 2.99, purchased_by: null, source: 'manual', confidence_score: null, photo_url: null, status: 'fresh', frozen_to_save: null, notes: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), ingredient: baseIngredient('Frozen Peas', 'Frozen', 7, 240) },
+  const make = (
+    id: string,
+    name: string,
+    category: any,
+    qty: string,
+    location: StorageLocation,
+    expiresInDays: number,
+    originalDays: number,
+    isOpened: boolean,
+    price: number,
+    source: any = 'vision_scan',
+    confidence: number | null = 90,
+    fridgeDays = 7
+  ): InventoryItem => ({
+    id,
+    household_id: 'demo',
+    ingredient_id: `ing-${name.toLowerCase().replace(/\s+/g, '-')}`,
+    storage_location: location,
+    quantity_text: qty,
+    quantity_numeric: null,
+    is_opened: isOpened,
+    expiry_date: isoDate(expiresInDays),
+    original_expiry_date: isoDate(originalDays),
+    purchase_date: isoDate(-Math.max(1, originalDays - expiresInDays)),
+    purchase_price: price,
+    purchased_by: null,
+    source,
+    confidence_score: confidence,
+    photo_url: null,
+    status: expiresInDays <= 0 ? 'expiring_today' : expiresInDays <= 3 ? 'expiring_soon' : 'fresh',
+    frozen_to_save: null,
+    notes: null,
+    created_at: isoTs,
+    updated_at: isoTs,
+    ingredient: baseIngredient(name, category, fridgeDays),
+  });
+
+  return [
+    make('1', 'Baby Spinach', 'Produce', '1 bag', 'crisper', 1, 7, true, 3.99, 'vision_scan', 88, 5),
+    make('2', 'Eggs', 'Protein', '8 remaining', 'fridge_door', 14, 21, true, 5.49, 'vision_scan', 92, 21),
+    make('3', 'Whole Milk', 'Dairy', '1 gallon, 3/4 full', 'fridge_door', 2, 10, true, 4.29, 'vision_scan', 95, 10),
+    make('4', 'Chicken Breast', 'Protein', '1 lb pack', 'fridge_middle', 2, 3, false, 8.99, 'receipt', 100, 3),
+    make('5', 'Cheddar Cheese', 'Dairy', '1 block', 'fridge_middle', 10, 21, true, 6.99, 'barcode', 100, 21),
+    make('6', 'Red Bell Pepper', 'Produce', '2', 'crisper', 8, 10, false, 2.5, 'manual', null, 10),
+    make('7', 'Greek Yogurt', 'Dairy', '3 cups', 'fridge_top', 12, 14, false, 4.99, 'vision_scan', 87, 14),
+    make('8', 'Sourdough Bread', 'Grains and Bread', '1 loaf', 'pantry', 3, 7, true, 3.49, 'manual', null, 7),
+    make('9', 'Strawberries', 'Produce', '1 container', 'crisper', 0, 5, false, 4.99, 'vision_scan', 82, 5),
+    make('10', 'Frozen Peas', 'Frozen', '1 bag', 'freezer', 180, 180, false, 2.99, 'manual', null, 7),
   ];
-  return demos;
 }
 
 export const useInventoryStore = create<InventoryState>((set, get) => ({
-  items: getDemoItems(),
+  items: [],
   isLoading: false,
+  hasInitializedDemo: false,
   filter: {
     location: 'all',
     status: 'all',
@@ -77,10 +119,15 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
     search: '',
   },
 
+  loadDemoIfEmpty: () => {
+    const state = get();
+    if (state.hasInitializedDemo) return;
+    set({ items: getDemoItems(), hasInitializedDemo: true });
+  },
+
   fetchItems: async (householdId: string) => {
     if (!householdId || householdId === 'demo') {
-      // Keep demo items
-      set({ isLoading: false });
+      get().loadDemoIfEmpty();
       return;
     }
     set({ isLoading: true });
@@ -91,7 +138,7 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
       .not('status', 'in', '("consumed","wasted")')
       .order('expiry_date', { ascending: true });
 
-    set({ items: data && data.length > 0 ? data : getDemoItems(), isLoading: false });
+    set({ items: data && data.length > 0 ? data : getDemoItems(), isLoading: false, hasInitializedDemo: true });
   },
 
   addItem: async (item: Partial<InventoryItem>) => {
@@ -119,6 +166,11 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
       set((state) => ({
         items: state.items.map((item) => (item.id === id ? data : item)),
       }));
+    } else {
+      // Demo mode: update locally
+      set((state) => ({
+        items: state.items.map((item) => (item.id === id ? { ...item, ...updates } : item)),
+      }));
     }
   },
 
@@ -130,21 +182,15 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
   markAsOpened: async (id: string) => {
     const item = get().items.find((i) => i.id === id);
     if (!item?.ingredient) return;
-
     const openedDays = item.ingredient.default_shelf_life_opened_days;
     const newExpiry = new Date();
     newExpiry.setDate(newExpiry.getDate() + openedDays);
-
-    await get().updateItem(id, {
-      is_opened: true,
-      expiry_date: newExpiry.toISOString().split('T')[0],
-    });
+    await get().updateItem(id, { is_opened: true, expiry_date: newExpiry.toISOString().split('T')[0] });
   },
 
   moveLocation: async (id: string, newLocation: StorageLocation) => {
     const item = get().items.find((i) => i.id === id);
     if (!item?.ingredient) return;
-
     let shelfDays: number;
     if (newLocation === 'freezer') {
       shelfDays = item.ingredient.default_shelf_life_freezer_days;
@@ -155,22 +201,14 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
         ? item.ingredient.default_shelf_life_opened_days
         : item.ingredient.default_shelf_life_fridge_days;
     }
-
     const newExpiry = new Date();
     newExpiry.setDate(newExpiry.getDate() + shelfDays);
-
-    await get().updateItem(id, {
-      storage_location: newLocation,
-      expiry_date: newExpiry.toISOString().split('T')[0],
-    });
+    await get().updateItem(id, { storage_location: newLocation, expiry_date: newExpiry.toISOString().split('T')[0] });
   },
 
   freezeToSave: async (id: string) => {
     await get().moveLocation(id, 'freezer');
-    await get().updateItem(id, {
-      status: 'frozen_to_save',
-      frozen_to_save: new Date().toISOString(),
-    });
+    await get().updateItem(id, { status: 'frozen_to_save', frozen_to_save: new Date().toISOString() });
   },
 
   markConsumed: async (id: string) => {
@@ -181,16 +219,16 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
   markWasted: async (id: string, reason: string) => {
     const item = get().items.find((i) => i.id === id);
     if (!item) return;
-
-    await supabase.from('waste_log').insert({
-      household_id: item.household_id,
-      inventory_item_id: id,
-      ingredient_id: item.ingredient_id,
-      quantity_wasted: item.quantity_text,
-      estimated_value: item.purchase_price || 0,
-      reason,
-    });
-
+    try {
+      await supabase.from('waste_log').insert({
+        household_id: item.household_id,
+        inventory_item_id: id,
+        ingredient_id: item.ingredient_id,
+        quantity_wasted: item.quantity_text,
+        estimated_value: item.purchase_price || 0,
+        reason,
+      });
+    } catch {}
     await get().updateItem(id, { status: 'wasted' });
     set((state) => ({ items: state.items.filter((i) => i.id !== id) }));
   },
@@ -212,16 +250,17 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
       return true;
     });
   },
-
-  getExpiringItems: () => {
-    const { items } = get();
-    const now = new Date();
-    const threeDays = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
-    return items
-      .filter((item) => {
-        const expiry = new Date(item.expiry_date);
-        return expiry <= threeDays && item.status !== 'consumed' && item.status !== 'wasted';
-      })
-      .sort((a, b) => new Date(a.expiry_date).getTime() - new Date(b.expiry_date).getTime());
-  },
 }));
+
+// Helper: derive expiring items via React render-side computation, NOT a Zustand selector
+// (using a Zustand selector that returns a new array each call causes infinite re-renders)
+export function selectExpiringItems(items: InventoryItem[]): InventoryItem[] {
+  const now = new Date();
+  const threeDays = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
+  return items
+    .filter((item) => {
+      const expiry = new Date(item.expiry_date);
+      return expiry <= threeDays && item.status !== 'consumed' && item.status !== 'wasted';
+    })
+    .sort((a, b) => new Date(a.expiry_date).getTime() - new Date(b.expiry_date).getTime());
+}

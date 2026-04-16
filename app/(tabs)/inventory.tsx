@@ -32,12 +32,13 @@ const LOCATION_TABS: { key: StorageLocation | 'all'; label: string }[] = [
 
 export default function InventoryScreen() {
   const [searchText, setSearchText] = useState('');
-  const { items, isLoading, filter, setFilter, fetchItems, markAsOpened, freezeToSave, markConsumed, markWasted } = useInventoryStore();
+  const { items, isLoading, filter, setFilter, fetchItems, loadDemoIfEmpty, markAsOpened, freezeToSave, markConsumed, markWasted } = useInventoryStore();
   const user = useAuthStore((s) => s.user);
 
   useEffect(() => {
+    loadDemoIfEmpty();
     if (user?.household_id) fetchItems(user.household_id);
-  }, [user?.household_id]);
+  }, [user?.household_id, loadDemoIfEmpty]);
 
   const filteredItems = items.filter((item) => {
     if (filter.location !== 'all') {

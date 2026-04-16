@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -9,17 +9,28 @@ import {
   ScrollView,
   ActivityIndicator,
   Alert,
+  Platform,
 } from 'react-native';
-import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import { FontAwesome } from '@expo/vector-icons';
 import Colors from '@/constants/Colors';
 import { useAuthStore } from '@/stores/authStore';
-import { useInventoryStore } from '@/stores/inventoryStore';
+import { useInventoryStore, selectExpiringItems } from '@/stores/inventoryStore';
 import { scanFridgeImage } from '@/services/visionService';
 import { lookupBarcode, type BarcodeProduct } from '@/services/barcodeService';
 import type { VisionScanItem } from '@/lib/types';
 import { getExpiryColor, getExpiryStatus } from '@/lib/helpers';
+
+// Lazy import to avoid breaking web SSR
+let CameraView: any = null;
+let useCameraPermissions: any = () => [{ granted: false }, async () => {}];
+if (Platform.OS !== 'web') {
+  try {
+    const camera = require('expo-camera');
+    CameraView = camera.CameraView;
+    useCameraPermissions = camera.useCameraPermissions;
+  } catch {}
+}
 
 type ScanMode = 'idle' | 'camera' | 'barcode' | 'scanning';
 
@@ -29,10 +40,19 @@ export default function ScanScreen() {
   const [scanResults, setScanResults] = useState<VisionScanItem[]>([]);
   const [barcodeResult, setBarcodeResult] = useState<BarcodeProduct | null>(null);
   const [mode, setMode] = useState<ScanMode>('idle');
-  const cameraRef = useRef<CameraView>(null);
+  const cameraRef = useRef<any>(null);
   const lastScannedBarcode = useRef<string>('');
 
-  const expiringItems = useInventoryStore((s) => s.getExpiringItems());
+  const items = useInventoryStore((s) => s.items);
+  const loadDemoIfEmpty = useInventoryStore((s) => s.loadDemoIfEmpty);
+
+  // Initialize demo data on client only (avoids SSR hydration issues)
+  useEffect(() => {
+    loadDemoIfEmpty();
+  }, [loadDemoIfEmpty]);
+
+  // Memoize expiring items computation - prevents infinite re-renders
+  const expiringItems = useMemo(() => selectExpiringItems(items), [items]);
 
   const takePhoto = async () => {
     if (!cameraRef.current) return;
@@ -103,8 +123,41 @@ export default function ScanScreen() {
     lastScannedBarcode.current = '';
   };
 
-  // Camera mode (vision)
-  if (mode === 'camera') {
+  // Camera/barcode mode - show web fallback if needed
+  if (mode === 'camera' || mode === 'barcode') {
+    if (Platform.OS === 'web' || !CameraView) {
+      return (
+        <SafeAreaView style={styles.container}>
+          <View style={styles.centered}>
+            <FontAwesome name="info-circle" size={48} color={Colors.brand.primary} />
+            <Text style={styles.permissionTitle}>
+              {mode === 'camera' ? 'Camera Scan' : 'Barcode Scan'}
+            </Text>
+            <Text style={styles.permissionText}>
+              Camera scanning works on iOS/Android. On web, use the Gallery option to upload a photo.
+            </Text>
+            <TouchableOpacity style={styles.primaryButton} onPress={() => setMode('idle')}>
+              <Text style={styles.primaryButtonText}>Back</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.primaryButton, { backgroundColor: '#fff', borderWidth: 1, borderColor: Colors.brand.primary, marginTop: 8 }]}
+              onPress={() => {
+                // Demo: just simulate a scan with demo data
+                const demo = [
+                  { name: 'Whole Milk', quantity: '1 gallon', category: 'Dairy' as any, condition: 'fresh' as const, confidence: 95 },
+                  { name: 'Eggs', quantity: '8 remaining', category: 'Protein' as any, condition: 'fresh' as const, confidence: 92 },
+                  { name: 'Baby Spinach', quantity: '1 bag', category: 'Produce' as any, condition: 'aging' as const, confidence: 85 },
+                ];
+                setScanResults(demo);
+                setMode('idle');
+              }}
+            >
+              <Text style={[styles.primaryButtonText, { color: Colors.brand.primary }]}>Try Demo Scan</Text>
+            </TouchableOpacity>
+          </View>
+        </SafeAreaView>
+      );
+    }
     if (!permission?.granted) {
       return (
         <SafeAreaView style={styles.container}>
@@ -118,40 +171,25 @@ export default function ScanScreen() {
         </SafeAreaView>
       );
     }
-    return (
-      <View style={styles.cameraContainer}>
-        <CameraView ref={cameraRef} style={styles.camera} facing="back">
-          <SafeAreaView style={styles.cameraOverlay}>
-            <TouchableOpacity style={styles.closeButton} onPress={() => setMode('idle')}>
-              <FontAwesome name="times" size={24} color="#fff" />
-            </TouchableOpacity>
-            <View style={styles.cameraGuide}>
-              <Text style={styles.cameraGuideText}>Point at a shelf or section</Text>
-            </View>
-            <View style={styles.cameraControls}>
-              <TouchableOpacity style={styles.captureButton} onPress={takePhoto}>
-                <View style={styles.captureButtonInner} />
-              </TouchableOpacity>
-            </View>
-          </SafeAreaView>
-        </CameraView>
-      </View>
-    );
-  }
-
-  // Barcode mode
-  if (mode === 'barcode') {
-    if (!permission?.granted) {
+    if (mode === 'camera') {
       return (
-        <SafeAreaView style={styles.container}>
-          <View style={styles.centered}>
-            <FontAwesome name="camera" size={48} color="#999" />
-            <Text style={styles.permissionTitle}>Camera Access Required</Text>
-            <TouchableOpacity style={styles.primaryButton} onPress={requestPermission}>
-              <Text style={styles.primaryButtonText}>Grant Access</Text>
-            </TouchableOpacity>
-          </View>
-        </SafeAreaView>
+        <View style={styles.cameraContainer}>
+          <CameraView ref={cameraRef} style={styles.camera} facing="back">
+            <SafeAreaView style={styles.cameraOverlay}>
+              <TouchableOpacity style={styles.closeButton} onPress={() => setMode('idle')}>
+                <FontAwesome name="times" size={24} color="#fff" />
+              </TouchableOpacity>
+              <View style={styles.cameraGuide}>
+                <Text style={styles.cameraGuideText}>Point at a shelf or section</Text>
+              </View>
+              <View style={styles.cameraControls}>
+                <TouchableOpacity style={styles.captureButton} onPress={takePhoto}>
+                  <View style={styles.captureButtonInner} />
+                </TouchableOpacity>
+              </View>
+            </SafeAreaView>
+          </CameraView>
+        </View>
       );
     }
     return (
@@ -160,9 +198,7 @@ export default function ScanScreen() {
           style={styles.camera}
           facing="back"
           onBarcodeScanned={handleBarcodeScan}
-          barcodeScannerSettings={{
-            barcodeTypes: ['ean13', 'ean8', 'upc_a', 'upc_e', 'qr'],
-          }}
+          barcodeScannerSettings={{ barcodeTypes: ['ean13', 'ean8', 'upc_a', 'upc_e', 'qr'] }}
         >
           <SafeAreaView style={styles.cameraOverlay}>
             <TouchableOpacity style={styles.closeButton} onPress={() => setMode('idle')}>

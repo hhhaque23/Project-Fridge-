@@ -18,21 +18,28 @@ SplashScreen.preventAutoHideAsync();
 function RootNav() {
   const router = useRouter();
   const segments = useSegments();
-  const { user, isLoading, isOnboarded } = useAuthStore();
+  const user = useAuthStore((s) => s.user);
+  const isLoading = useAuthStore((s) => s.isLoading);
+  const isOnboarded = useAuthStore((s) => s.isOnboarded);
+
+  // Stabilize segments to a string so the effect doesn't fire on every render
+  const segmentsKey = segments.join('/');
 
   useEffect(() => {
     if (isLoading) return;
 
-    const inAuthGroup = segments[0] === '(auth)';
+    const segs = segmentsKey.split('/').filter(Boolean);
+    const inAuthGroup = segs[0] === '(auth)';
+    const isOnboardingRoute = segs[1] === 'onboarding';
 
     if (!user && !inAuthGroup) {
       router.replace('/(auth)/login' as any);
-    } else if (user && !isOnboarded && (segments as string[])[1] !== 'onboarding') {
+    } else if (user && !isOnboarded && !isOnboardingRoute) {
       router.replace('/(auth)/onboarding' as any);
     } else if (user && isOnboarded && inAuthGroup) {
       router.replace('/(tabs)' as any);
     }
-  }, [user, isLoading, isOnboarded, segments]);
+  }, [user, isLoading, isOnboarded, segmentsKey, router]);
 
   if (isLoading) {
     return (
