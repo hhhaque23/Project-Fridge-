@@ -36,23 +36,25 @@ export default function ProfileScreen() {
     {
       title: 'Dietary & Planning',
       items: [
-        { icon: 'heartbeat', label: 'Dietary Profile', subtitle: user?.dietary_profile?.diet_type || 'Not set', onPress: () => {} },
-        { icon: 'exclamation-triangle', label: 'Allergies', subtitle: user?.dietary_profile?.allergies?.join(', ') || 'None', onPress: () => {} },
+        { icon: 'heartbeat', label: 'Dietary Profile', subtitle: user?.dietary_profile?.diet_type || 'Not set', onPress: () => router.push('/settings' as any) },
+        { icon: 'exclamation-triangle', label: 'Allergies', subtitle: user?.dietary_profile?.allergies?.join(', ') || 'None', onPress: () => router.push('/settings' as any) },
         { icon: 'calendar', label: 'Meal Plan', subtitle: 'Weekly planner', onPress: () => router.push('/meal-plan' as any) },
       ],
     },
     {
-      title: 'Insights',
+      title: 'Insights & Tools',
       items: [
         { icon: 'pie-chart', label: 'Waste Dashboard', subtitle: 'Score, money saved, CO2 avoided', onPress: () => router.push('/waste-dashboard' as any) },
-        { icon: 'bar-chart', label: 'Usage Patterns', onPress: () => router.push('/waste-dashboard' as any) },
+        { icon: 'lightbulb-o', label: 'Storage Advisor', subtitle: 'Tips & ethylene warnings', onPress: () => router.push('/storage-advisor' as any) },
+        { icon: 'microphone', label: 'Voice Add', subtitle: 'Add items by voice', onPress: () => router.push('/voice-add' as any) },
+        { icon: 'file-text-o', label: 'Receipt Scan', subtitle: 'Auto-import from receipt', onPress: () => router.push('/receipt-scan' as any) },
       ],
     },
     {
       title: 'App',
       items: [
-        { icon: 'star', label: 'Subscription', subtitle: user?.subscription_tier || 'Free', onPress: () => {} },
-        { icon: 'cog', label: 'Settings', onPress: () => {} },
+        { icon: 'star', label: 'Subscription', subtitle: user?.subscription_tier || 'Free', onPress: () => router.push('/settings' as any) },
+        { icon: 'cog', label: 'Settings', subtitle: 'Notifications, dietary, account', onPress: () => router.push('/settings' as any) },
         { icon: 'question-circle', label: 'Help & FAQ', onPress: () => {} },
         { icon: 'info-circle', label: 'About FreshScan', onPress: () => {} },
       ],

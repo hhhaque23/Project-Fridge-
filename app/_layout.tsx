@@ -64,6 +64,10 @@ function RootNav() {
       <Stack.Screen name="waste-dashboard" options={{ headerShown: true }} />
       <Stack.Screen name="meal-plan" options={{ headerShown: true }} />
       <Stack.Screen name="household" options={{ headerShown: true }} />
+      <Stack.Screen name="voice-add" options={{ headerShown: true }} />
+      <Stack.Screen name="receipt-scan" options={{ headerShown: true }} />
+      <Stack.Screen name="storage-advisor" options={{ headerShown: true }} />
+      <Stack.Screen name="settings" options={{ headerShown: true }} />
     </Stack>
   );
 }

@@ -20,6 +20,7 @@ import { scanFridgeImage } from '@/services/visionService';
 import { lookupBarcode, type BarcodeProduct } from '@/services/barcodeService';
 import type { VisionScanItem } from '@/lib/types';
 import { getExpiryColor, getExpiryStatus } from '@/lib/helpers';
+import { useRouter } from 'expo-router';
 
 // Lazy import to avoid breaking web SSR
 let CameraView: any = null;
@@ -43,6 +44,7 @@ export default function ScanScreen() {
   const cameraRef = useRef<any>(null);
   const lastScannedBarcode = useRef<string>('');
 
+  const router = useRouter();
   const items = useInventoryStore((s) => s.items);
   const loadDemoIfEmpty = useInventoryStore((s) => s.loadDemoIfEmpty);
 
@@ -240,12 +242,22 @@ export default function ScanScreen() {
               </TouchableOpacity>
               <View style={styles.secondaryRow}>
                 <TouchableOpacity style={styles.scanButtonSmall} onPress={() => setMode('barcode')}>
-                  <FontAwesome name="barcode" size={20} color={Colors.brand.primary} />
+                  <FontAwesome name="barcode" size={18} color={Colors.brand.primary} />
                   <Text style={styles.scanButtonSmallText}>Barcode</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.scanButtonSmall} onPress={pickImage}>
-                  <FontAwesome name="image" size={20} color={Colors.brand.primary} />
+                  <FontAwesome name="image" size={18} color={Colors.brand.primary} />
                   <Text style={styles.scanButtonSmallText}>Gallery</Text>
+                </TouchableOpacity>
+              </View>
+              <View style={styles.secondaryRow}>
+                <TouchableOpacity style={styles.scanButtonSmall} onPress={() => router.push('/voice-add' as any)}>
+                  <FontAwesome name="microphone" size={18} color={Colors.brand.primary} />
+                  <Text style={styles.scanButtonSmallText}>Voice</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.scanButtonSmall} onPress={() => router.push('/receipt-scan' as any)}>
+                  <FontAwesome name="file-text-o" size={18} color={Colors.brand.primary} />
+                  <Text style={styles.scanButtonSmallText}>Receipt</Text>
                 </TouchableOpacity>
               </View>
             </View>
