@@ -38,33 +38,25 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   isOnboarded: false,
 
   initialize: async () => {
-    // Demo mode: if no real Supabase URL, set a demo user so the app is browsable
-    const isDemoMode = !process.env.EXPO_PUBLIC_SUPABASE_URL ||
-      process.env.EXPO_PUBLIC_SUPABASE_URL.includes('your-project');
+    // Temporarily bypass auth: always set a demo user so users can browse
+    // the app immediately. Real auth can still sign in if user chooses to,
+    // but the login page is skipped by default.
+    const demoUser: User = {
+      id: 'demo-user-id',
+      email: 'demo@freshscan.app',
+      display_name: 'Demo User',
+      auth_provider: 'demo',
+      avatar_url: '',
+      household_id: null,
+      dietary_profile: { allergies: [], intolerances: [], diet_type: null, calorie_target: null, macro_split: null },
+      notification_preferences: null,
+      onboarding_completed: true,
+      subscription_tier: 'Pro',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
 
-    if (isDemoMode) {
-      set({
-        session: { user: { id: 'demo-user-id' } } as any,
-        user: {
-          id: 'demo-user-id',
-          email: 'demo@freshscan.app',
-          display_name: 'Demo User',
-          auth_provider: 'demo',
-          avatar_url: '',
-          household_id: null,
-          dietary_profile: { allergies: [], intolerances: [], diet_type: null, calorie_target: null, macro_split: null },
-          notification_preferences: null,
-          onboarding_completed: true,
-          subscription_tier: 'Pro',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        },
-        isOnboarded: true,
-        isLoading: false,
-      });
-      return;
-    }
-
+    // Try to load real Supabase session first (if user has actually signed in)
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
@@ -76,34 +68,38 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
         set({
           session,
-          user: profile,
-          isOnboarded: profile?.onboarding_completed ?? false,
+          user: profile || { ...demoUser, id: session.user.id, email: session.user.email || demoUser.email },
+          isOnboarded: profile?.onboarding_completed ?? true,
           isLoading: false,
         });
-      } else {
-        set({ isLoading: false });
+
+        // Listen for future auth changes
+        supabase.auth.onAuthStateChange(async (_event, newSession) => {
+          if (newSession?.user) {
+            const { data: p } = await supabase
+              .from('users')
+              .select('*')
+              .eq('id', newSession.user.id)
+              .single();
+            set({
+              session: newSession,
+              user: p || { ...demoUser, id: newSession.user.id, email: newSession.user.email || demoUser.email },
+              isOnboarded: p?.onboarding_completed ?? true,
+            });
+          }
+          // Don't clear user on sign-out - fall back to demo
+        });
+        return;
       }
+    } catch {}
 
-      supabase.auth.onAuthStateChange(async (_event, session) => {
-        if (session?.user) {
-          const { data: profile } = await supabase
-            .from('users')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
-
-          set({
-            session,
-            user: profile,
-            isOnboarded: profile?.onboarding_completed ?? false,
-          });
-        } else {
-          set({ session: null, user: null, isOnboarded: false });
-        }
-      });
-    } catch {
-      set({ isLoading: false });
-    }
+    // No real session - use demo user to bypass login
+    set({
+      session: { user: { id: demoUser.id } } as any,
+      user: demoUser,
+      isOnboarded: true,
+      isLoading: false,
+    });
   },
 
   signInWithEmail: async (email: string) => {

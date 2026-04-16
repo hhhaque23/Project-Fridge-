@@ -41,13 +41,9 @@ function RootNav() {
 
     const segs = segmentsKey.split('/').filter(Boolean);
     const inAuthGroup = segs[0] === '(auth)';
-    const isOnboardingRoute = segs[1] === 'onboarding';
 
-    if (!user && !inAuthGroup) {
-      router.replace('/(auth)/login' as any);
-    } else if (user && !isOnboarded && !isOnboardingRoute) {
-      router.replace('/(auth)/onboarding' as any);
-    } else if (user && isOnboarded && inAuthGroup) {
+    // Bypass auth: if somehow landed on login/onboarding, send straight to tabs
+    if (inAuthGroup) {
       router.replace('/(tabs)' as any);
     }
   }, [user, isLoading, isOnboarded, segmentsKey, router]);
