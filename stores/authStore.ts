@@ -1,6 +1,21 @@
 import { create } from 'zustand';
 import { supabase } from '@/lib/supabase';
 import type { User } from '@/lib/types';
+import { Platform } from 'react-native';
+import * as Linking from 'expo-linking';
+
+// Determine the correct redirect URL for OAuth flows
+function getRedirectUrl(): string {
+  if (Platform.OS === 'web') {
+    // On web, redirect back to current origin
+    if (typeof window !== 'undefined') {
+      return `${window.location.origin}/(auth)/login`;
+    }
+    return '';
+  }
+  // On mobile (Expo Go or native), use deep link
+  return Linking.createURL('(auth)/login');
+}
 
 interface AuthState {
   user: User | null;
@@ -92,13 +107,52 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   signInWithEmail: async (email: string) => {
-    const { error } = await supabase.auth.signInWithOtp({ email });
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: {
+        emailRedirectTo: getRedirectUrl(),
+      },
+    });
     return { error: error as Error | null };
   },
 
   signInWithOAuth: async (provider: 'google' | 'apple') => {
-    const { error } = await supabase.auth.signInWithOAuth({ provider });
-    return { error: error as Error | null };
+    const redirectTo = getRedirectUrl();
+
+    if (Platform.OS === 'web') {
+      // Web: Supabase handles the redirect flow automatically
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: { redirectTo, skipBrowserRedirect: false },
+      });
+      return { error: error as Error | null };
+    }
+
+    // Mobile: open in in-app browser, handle deep link back
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: { redirectTo, skipBrowserRedirect: true },
+      });
+      if (error || !data?.url) return { error: error as Error | null };
+
+      const WebBrowser = require('expo-web-browser');
+      const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+
+      if (result.type === 'success' && result.url) {
+        // Parse the tokens from the URL and set session
+        const url = result.url;
+        const params = new URLSearchParams(url.split('#')[1] || url.split('?')[1] || '');
+        const access_token = params.get('access_token');
+        const refresh_token = params.get('refresh_token');
+        if (access_token && refresh_token) {
+          await supabase.auth.setSession({ access_token, refresh_token });
+        }
+      }
+      return { error: null };
+    } catch (e: any) {
+      return { error: e as Error };
+    }
   },
 
   signOut: async () => {

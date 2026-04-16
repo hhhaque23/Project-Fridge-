@@ -44,7 +44,15 @@ export default function LoginScreen() {
     const { error } = await signInWithOAuth(provider);
     setIsLoading(false);
     if (error) {
-      Alert.alert('Error', `Failed to sign in with ${provider}`);
+      const msg = error.message?.toLowerCase() || '';
+      if (msg.includes('provider') || msg.includes('not enabled') || msg.includes('disabled')) {
+        Alert.alert(
+          `${provider === 'google' ? 'Google' : 'Apple'} Sign-In Not Set Up`,
+          `To enable, go to Supabase Dashboard → Authentication → Providers → ${provider === 'google' ? 'Google' : 'Apple'} and add your OAuth credentials. For now, use email magic link.`
+        );
+      } else {
+        Alert.alert('Error', `Could not sign in with ${provider}: ${error.message || 'unknown error'}`);
+      }
     }
   };
 
