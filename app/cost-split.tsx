@@ -9,6 +9,9 @@ import {
   Alert,
   Linking,
   Platform,
+  Modal,
+  TextInput,
+  Pressable,
 } from 'react-native';
 import { Stack } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
@@ -44,8 +47,34 @@ const DEMO_EXPENSES: Expense[] = [
 ];
 
 export default function CostSplitScreen() {
-  const [expenses] = useState<Expense[]>(DEMO_EXPENSES);
+  const [expenses, setExpenses] = useState<Expense[]>(DEMO_EXPENSES);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newDesc, setNewDesc] = useState('');
+  const [newAmount, setNewAmount] = useState('');
+  const [newStore, setNewStore] = useState('');
   const members = DEMO_MEMBERS;
+
+  const handleAddExpense = () => {
+    const amount = parseFloat(newAmount);
+    if (!newDesc.trim() || !amount || isNaN(amount) || amount <= 0) {
+      Alert.alert('Missing info', 'Enter a description and valid amount');
+      return;
+    }
+    const newExp: Expense = {
+      id: `e${Date.now()}`,
+      description: newDesc.trim(),
+      amount,
+      paid_by: 'me',
+      date: new Date().toISOString().split('T')[0],
+      store: newStore.trim() || 'Unknown',
+      split_with: ['me', 'alex', 'sam'],
+    };
+    setExpenses([newExp, ...expenses]);
+    setNewDesc('');
+    setNewAmount('');
+    setNewStore('');
+    setShowAddModal(false);
+  };
 
   // Calculate balances - who owes who
   const balances = useMemo(() => {
@@ -244,12 +273,62 @@ export default function CostSplitScreen() {
           {/* Add expense */}
           <TouchableOpacity
             style={styles.addExpenseButton}
-            onPress={() => Alert.alert('Add Expense', 'Manual expense entry coming soon. Use receipt scan to auto-add.')}
+            onPress={() => setShowAddModal(true)}
           >
             <FontAwesome name="plus" size={14} color="#fff" />
             <Text style={styles.addExpenseText}>Add Expense</Text>
           </TouchableOpacity>
         </ScrollView>
+
+        {/* Add expense modal */}
+        <Modal
+          visible={showAddModal}
+          transparent
+          animationType="slide"
+          onRequestClose={() => setShowAddModal(false)}
+        >
+          <Pressable style={styles.modalOverlay} onPress={() => setShowAddModal(false)}>
+            <Pressable style={styles.modalCard} onPress={() => {}}>
+              <Text style={styles.modalTitle}>Add Expense</Text>
+              <Text style={styles.modalLabel}>Description</Text>
+              <TextInput
+                style={styles.modalInput}
+                placeholder="e.g. Weekly groceries"
+                placeholderTextColor="#999"
+                value={newDesc}
+                onChangeText={setNewDesc}
+              />
+              <Text style={styles.modalLabel}>Amount ($)</Text>
+              <TextInput
+                style={styles.modalInput}
+                placeholder="45.00"
+                placeholderTextColor="#999"
+                value={newAmount}
+                onChangeText={setNewAmount}
+                keyboardType="decimal-pad"
+              />
+              <Text style={styles.modalLabel}>Store (optional)</Text>
+              <TextInput
+                style={styles.modalInput}
+                placeholder="Trader Joe's"
+                placeholderTextColor="#999"
+                value={newStore}
+                onChangeText={setNewStore}
+              />
+              <Text style={styles.modalHint}>
+                Split evenly across all household members. Editing who to split with coming v1.1.
+              </Text>
+              <View style={styles.modalActions}>
+                <TouchableOpacity style={styles.modalCancel} onPress={() => setShowAddModal(false)}>
+                  <Text style={styles.modalCancelText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.modalSubmit} onPress={handleAddExpense}>
+                  <Text style={styles.modalSubmitText}>Add Expense</Text>
+                </TouchableOpacity>
+              </View>
+            </Pressable>
+          </Pressable>
+        </Modal>
       </SafeAreaView>
     </>
   );
@@ -289,4 +368,15 @@ const styles = StyleSheet.create({
   expenseAmount: { fontSize: 14, fontWeight: '700', color: '#1a1a1a' },
   addExpenseButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: Colors.brand.primary, borderRadius: 12, padding: 14, marginTop: 4 },
   addExpenseText: { color: '#fff', fontSize: 15, fontWeight: '700' },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+  modalCard: { backgroundColor: '#fff', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, paddingBottom: 32 },
+  modalTitle: { fontSize: 20, fontWeight: '700', color: '#1a1a1a', marginBottom: 16 },
+  modalLabel: { fontSize: 12, fontWeight: '600', color: '#666', marginBottom: 6, marginTop: 10 },
+  modalInput: { borderWidth: 1, borderColor: '#E0E0E0', borderRadius: 10, padding: 12, fontSize: 15, color: '#1a1a1a', backgroundColor: '#FAFAFA' },
+  modalHint: { fontSize: 11, color: '#999', marginTop: 10, lineHeight: 16, fontStyle: 'italic' },
+  modalActions: { flexDirection: 'row', gap: 10, marginTop: 16 },
+  modalCancel: { paddingVertical: 14, paddingHorizontal: 24, borderRadius: 10, borderWidth: 1, borderColor: '#DDD' },
+  modalCancelText: { fontSize: 14, fontWeight: '600', color: '#666' },
+  modalSubmit: { flex: 1, paddingVertical: 14, borderRadius: 10, backgroundColor: Colors.brand.primary, alignItems: 'center' },
+  modalSubmitText: { fontSize: 14, fontWeight: '700', color: '#fff' },
 });

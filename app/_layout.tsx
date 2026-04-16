@@ -82,6 +82,9 @@ function RootNav() {
       <Stack.Screen name="loyalty" options={{ headerShown: true }} />
       <Stack.Screen name="cost-split" options={{ headerShown: true }} />
       <Stack.Screen name="accuracy" options={{ headerShown: true }} />
+      <Stack.Screen name="edit-profile" options={{ headerShown: true }} />
+      <Stack.Screen name="help" options={{ headerShown: true }} />
+      <Stack.Screen name="about" options={{ headerShown: true }} />
     </Stack>
   );
 }

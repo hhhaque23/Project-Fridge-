@@ -29,9 +29,9 @@ export default function ProfileScreen() {
     {
       title: 'Account',
       items: [
-        { icon: 'user', label: 'Edit Profile', onPress: () => {} },
+        { icon: 'user', label: 'Edit Profile', onPress: () => router.push('/edit-profile' as any) },
         { icon: 'users', label: 'Household', subtitle: user?.household_id ? 'Manage members' : 'Create or join', onPress: () => router.push('/household' as any) },
-        { icon: 'bell', label: 'Notifications', onPress: () => {} },
+        { icon: 'bell', label: 'Notifications', subtitle: 'Expiry alerts, weekly report', onPress: () => router.push('/settings' as any) },
       ],
     },
     {
@@ -64,8 +64,8 @@ export default function ProfileScreen() {
       items: [
         { icon: 'star', label: 'Subscription', subtitle: user?.subscription_tier || 'Free', onPress: () => router.push('/settings' as any) },
         { icon: 'cog', label: 'Settings', subtitle: 'Notifications, dietary, account', onPress: () => router.push('/settings' as any) },
-        { icon: 'question-circle', label: 'Help & FAQ', onPress: () => {} },
-        { icon: 'info-circle', label: 'About FreshScan', onPress: () => {} },
+        { icon: 'question-circle', label: 'Help & FAQ', onPress: () => router.push('/help' as any) },
+        { icon: 'info-circle', label: 'About FreshScan', onPress: () => router.push('/about' as any) },
       ],
     },
   ];
