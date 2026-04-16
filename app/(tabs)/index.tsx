@@ -21,6 +21,7 @@ import { lookupBarcode, type BarcodeProduct } from '@/services/barcodeService';
 import type { VisionScanItem } from '@/lib/types';
 import { getExpiryColor, getExpiryStatus } from '@/lib/helpers';
 import { useRouter } from 'expo-router';
+import { FadeInView, PressableScale, PulseView, StaggeredList } from '@/components/Animated';
 
 // Lazy import to avoid breaking web SSR
 let CameraView: any = null;
@@ -227,39 +228,53 @@ export default function ScanScreen() {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {!photo && scanResults.length === 0 && !barcodeResult && (
           <View style={styles.heroSection}>
-            <View style={styles.heroIcon}>
-              <FontAwesome name="camera" size={56} color={Colors.brand.primary} />
-            </View>
-            <Text style={styles.heroTitle}>Scan Your Fridge</Text>
-            <Text style={styles.heroSubtitle}>
-              Take a photo and our AI will identify all visible items.
-            </Text>
+            <FadeInView delay={0} translateY={20}>
+              <PulseView style={{ width: 110, height: 110, borderRadius: 55, marginBottom: 20 }} color={Colors.brand.primaryLight}>
+                <View style={styles.heroIcon}>
+                  <FontAwesome name="camera" size={56} color={Colors.brand.primary} />
+                </View>
+              </PulseView>
+            </FadeInView>
+            <FadeInView delay={100}>
+              <Text style={styles.heroTitle}>Scan Your Fridge</Text>
+            </FadeInView>
+            <FadeInView delay={150}>
+              <Text style={styles.heroSubtitle}>
+                Take a photo and our AI will identify all visible items.
+              </Text>
+            </FadeInView>
             <View style={styles.scanOptions}>
-              <TouchableOpacity style={styles.scanButton} onPress={() => setMode('camera')}>
-                <FontAwesome name="camera" size={24} color="#fff" />
-                <Text style={styles.scanButtonText}>Quick Snap</Text>
-                <Text style={styles.scanButtonHint}>AI vision scan</Text>
-              </TouchableOpacity>
-              <View style={styles.secondaryRow}>
-                <TouchableOpacity style={styles.scanButtonSmall} onPress={() => setMode('barcode')}>
-                  <FontAwesome name="barcode" size={18} color={Colors.brand.primary} />
-                  <Text style={styles.scanButtonSmallText}>Barcode</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.scanButtonSmall} onPress={pickImage}>
-                  <FontAwesome name="image" size={18} color={Colors.brand.primary} />
-                  <Text style={styles.scanButtonSmallText}>Gallery</Text>
-                </TouchableOpacity>
-              </View>
-              <View style={styles.secondaryRow}>
-                <TouchableOpacity style={styles.scanButtonSmall} onPress={() => router.push('/voice-add' as any)}>
-                  <FontAwesome name="microphone" size={18} color={Colors.brand.primary} />
-                  <Text style={styles.scanButtonSmallText}>Voice</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.scanButtonSmall} onPress={() => router.push('/receipt-scan' as any)}>
-                  <FontAwesome name="file-text-o" size={18} color={Colors.brand.primary} />
-                  <Text style={styles.scanButtonSmallText}>Receipt</Text>
-                </TouchableOpacity>
-              </View>
+              <FadeInView delay={250}>
+                <PressableScale onPress={() => setMode('camera')} style={styles.scanButton}>
+                  <FontAwesome name="camera" size={24} color="#fff" />
+                  <Text style={styles.scanButtonText}>Quick Snap</Text>
+                  <Text style={styles.scanButtonHint}>AI vision scan</Text>
+                </PressableScale>
+              </FadeInView>
+              <FadeInView delay={320}>
+                <View style={styles.secondaryRow}>
+                  <PressableScale onPress={() => setMode('barcode')} style={styles.scanButtonSmall}>
+                    <FontAwesome name="barcode" size={18} color={Colors.brand.primary} />
+                    <Text style={styles.scanButtonSmallText}>Barcode</Text>
+                  </PressableScale>
+                  <PressableScale onPress={pickImage} style={styles.scanButtonSmall}>
+                    <FontAwesome name="image" size={18} color={Colors.brand.primary} />
+                    <Text style={styles.scanButtonSmallText}>Gallery</Text>
+                  </PressableScale>
+                </View>
+              </FadeInView>
+              <FadeInView delay={380}>
+                <View style={styles.secondaryRow}>
+                  <PressableScale onPress={() => router.push('/voice-add' as any)} style={styles.scanButtonSmall}>
+                    <FontAwesome name="microphone" size={18} color={Colors.brand.primary} />
+                    <Text style={styles.scanButtonSmallText}>Voice</Text>
+                  </PressableScale>
+                  <PressableScale onPress={() => router.push('/receipt-scan' as any)} style={styles.scanButtonSmall}>
+                    <FontAwesome name="file-text-o" size={18} color={Colors.brand.primary} />
+                    <Text style={styles.scanButtonSmallText}>Receipt</Text>
+                  </PressableScale>
+                </View>
+              </FadeInView>
             </View>
           </View>
         )}
@@ -303,45 +318,51 @@ export default function ScanScreen() {
         {/* Vision scan results */}
         {mode === 'idle' && scanResults.length > 0 && (
           <View style={styles.resultsSection}>
-            <View style={styles.resultsHeader}>
-              <Text style={styles.resultsTitle}>Found {scanResults.length} items</Text>
-              <TouchableOpacity onPress={confirmAll}>
-                <Text style={styles.confirmAllText}>Confirm All</Text>
-              </TouchableOpacity>
-            </View>
-            {scanResults.map((item, idx) => (
-              <View key={idx} style={styles.resultCard}>
-                <View style={styles.resultInfo}>
-                  <Text style={styles.resultName}>{item.name}</Text>
-                  <Text style={styles.resultDetails}>
-                    {item.quantity} - {item.category}
-                  </Text>
-                  <View style={styles.confidenceRow}>
-                    <View
-                      style={[
-                        styles.confidenceBar,
-                        {
-                          width: `${item.confidence}%`,
-                          backgroundColor:
-                            item.confidence >= 85 ? Colors.brand.primaryLight
-                            : item.confidence >= 60 ? '#FFC107' : '#F44336',
-                        },
-                      ]}
-                    />
-                    <Text style={styles.confidenceText}>{item.confidence}%</Text>
-                  </View>
-                </View>
-                <TouchableOpacity style={styles.confirmButton} onPress={() => confirmItem(item)}>
-                  <FontAwesome name="check" size={16} color="#fff" />
-                </TouchableOpacity>
+            <FadeInView>
+              <View style={styles.resultsHeader}>
+                <Text style={styles.resultsTitle}>Found {scanResults.length} items</Text>
+                <PressableScale onPress={confirmAll}>
+                  <Text style={styles.confirmAllText}>Confirm All</Text>
+                </PressableScale>
               </View>
+            </FadeInView>
+            {scanResults.map((item, idx) => (
+              <FadeInView key={idx} delay={idx * 60}>
+                <View style={styles.resultCard}>
+                  <View style={styles.resultInfo}>
+                    <Text style={styles.resultName}>{item.name}</Text>
+                    <Text style={styles.resultDetails}>
+                      {item.quantity} - {item.category}
+                    </Text>
+                    <View style={styles.confidenceRow}>
+                      <View
+                        style={[
+                          styles.confidenceBar,
+                          {
+                            width: `${item.confidence}%`,
+                            backgroundColor:
+                              item.confidence >= 85 ? Colors.brand.primaryLight
+                              : item.confidence >= 60 ? '#FFC107' : '#F44336',
+                          },
+                        ]}
+                      />
+                      <Text style={styles.confidenceText}>{item.confidence}%</Text>
+                    </View>
+                  </View>
+                  <PressableScale onPress={() => confirmItem(item)} style={styles.confirmButton}>
+                    <FontAwesome name="check" size={16} color="#fff" />
+                  </PressableScale>
+                </View>
+              </FadeInView>
             ))}
-            <TouchableOpacity
-              style={styles.scanAgainButton}
-              onPress={() => { setPhoto(null); setScanResults([]); }}
-            >
-              <Text style={styles.scanAgainText}>Scan Another Shelf</Text>
-            </TouchableOpacity>
+            <FadeInView delay={scanResults.length * 60 + 100}>
+              <PressableScale
+                onPress={() => { setPhoto(null); setScanResults([]); }}
+                style={styles.scanAgainButton}
+              >
+                <Text style={styles.scanAgainText}>Scan Another Shelf</Text>
+              </PressableScale>
+            </FadeInView>
           </View>
         )}
 

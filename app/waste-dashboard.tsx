@@ -13,6 +13,7 @@ import Colors from '@/constants/Colors';
 import { useAuthStore } from '@/stores/authStore';
 import { fetchWasteMetrics } from '@/services/wasteService';
 import type { WasteMetrics } from '@/lib/types';
+import { FadeInView, PressableScale, CountUp } from '@/components/Animated';
 
 const PERIODS = ['Week', 'Month', 'Year'];
 
@@ -78,40 +79,48 @@ export default function WasteDashboardScreen() {
         </View>
 
         {/* Hero score card */}
-        <View style={styles.heroCard}>
-          <Text style={styles.heroLabel}>Waste Score</Text>
-          <View style={styles.heroScoreRow}>
-            <Text style={styles.heroScore}>{metrics.monthly_waste_score}%</Text>
-            <View style={[styles.trendBadge, { backgroundColor: trendColor + '20' }]}>
-              <FontAwesome name={trendIcon as any} size={12} color={trendColor} />
-              <Text style={[styles.trendText, { color: trendColor }]}>{metrics.trend}</Text>
+        <FadeInView delay={50}>
+          <View style={styles.heroCard}>
+            <Text style={styles.heroLabel}>Waste Score</Text>
+            <View style={styles.heroScoreRow}>
+              <CountUp to={metrics.monthly_waste_score} suffix="%" duration={1200} style={styles.heroScore} />
+              <View style={[styles.trendBadge, { backgroundColor: trendColor + '20' }]}>
+                <FontAwesome name={trendIcon as any} size={12} color={trendColor} />
+                <Text style={[styles.trendText, { color: trendColor }]}>{metrics.trend}</Text>
+              </View>
+            </View>
+            <Text style={styles.heroHint}>
+              {metrics.items_rescued} of {metrics.items_rescued + metrics.items_wasted} items used before expiry
+            </Text>
+            <View style={styles.scoreBarBg}>
+              <View style={[styles.scoreBarFill, { width: `${metrics.monthly_waste_score}%` }]} />
             </View>
           </View>
-          <Text style={styles.heroHint}>
-            {metrics.items_rescued} of {metrics.items_rescued + metrics.items_wasted} items used before expiry
-          </Text>
-          <View style={styles.scoreBarBg}>
-            <View style={[styles.scoreBarFill, { width: `${metrics.monthly_waste_score}%` }]} />
-          </View>
-        </View>
+        </FadeInView>
 
         {/* Money + CO2 */}
         <View style={styles.metricsRow}>
-          <View style={[styles.metricCard, { backgroundColor: '#E8F5E9' }]}>
-            <FontAwesome name="dollar" size={20} color={Colors.brand.primary} />
-            <Text style={styles.metricValue}>${metrics.money_saved.toFixed(2)}</Text>
-            <Text style={styles.metricLabel}>Money Saved</Text>
-          </View>
-          <View style={[styles.metricCard, { backgroundColor: '#FFEBEE' }]}>
-            <FontAwesome name="trash" size={20} color="#D32F2F" />
-            <Text style={[styles.metricValue, { color: '#D32F2F' }]}>${metrics.money_wasted.toFixed(2)}</Text>
-            <Text style={styles.metricLabel}>Money Wasted</Text>
-          </View>
-          <View style={[styles.metricCard, { backgroundColor: '#E3F2FD' }]}>
-            <FontAwesome name="leaf" size={20} color="#1976D2" />
-            <Text style={[styles.metricValue, { color: '#1976D2' }]}>{metrics.co2_saved_kg}kg</Text>
-            <Text style={styles.metricLabel}>CO2 Avoided</Text>
-          </View>
+          <FadeInView delay={150} style={{ flex: 1 }}>
+            <View style={[styles.metricCard, { backgroundColor: '#E8F5E9' }]}>
+              <FontAwesome name="dollar" size={20} color={Colors.brand.primary} />
+              <CountUp to={metrics.money_saved} prefix="$" decimals={2} duration={1200} style={styles.metricValue} />
+              <Text style={styles.metricLabel}>Money Saved</Text>
+            </View>
+          </FadeInView>
+          <FadeInView delay={250} style={{ flex: 1 }}>
+            <View style={[styles.metricCard, { backgroundColor: '#FFEBEE' }]}>
+              <FontAwesome name="trash" size={20} color="#D32F2F" />
+              <CountUp to={metrics.money_wasted} prefix="$" decimals={2} duration={1200} style={[styles.metricValue, { color: '#D32F2F' }]} />
+              <Text style={styles.metricLabel}>Money Wasted</Text>
+            </View>
+          </FadeInView>
+          <FadeInView delay={350} style={{ flex: 1 }}>
+            <View style={[styles.metricCard, { backgroundColor: '#E3F2FD' }]}>
+              <FontAwesome name="leaf" size={20} color="#1976D2" />
+              <CountUp to={metrics.co2_saved_kg} suffix="kg" decimals={1} duration={1200} style={[styles.metricValue, { color: '#1976D2' }]} />
+              <Text style={styles.metricLabel}>CO2 Avoided</Text>
+            </View>
+          </FadeInView>
         </View>
 
         {/* Most wasted items */}

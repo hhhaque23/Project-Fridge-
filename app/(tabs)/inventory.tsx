@@ -21,6 +21,7 @@ import {
   formatStorageLocation,
 } from '@/lib/helpers';
 import type { InventoryItem, StorageLocation } from '@/lib/types';
+import { FadeInView, PressableScale } from '@/components/Animated';
 
 const LOCATION_TABS: { key: StorageLocation | 'all'; label: string }[] = [
   { key: 'all', label: 'All' },
@@ -93,39 +94,38 @@ export default function InventoryScreen() {
     Alert.alert(item.ingredient?.name || 'Item', getExpiryLabel(item.expiry_date), actions);
   };
 
-  const renderItem = ({ item }: { item: InventoryItem }) => {
+  const renderItem = ({ item, index }: { item: InventoryItem; index: number }) => {
     const status = getExpiryStatus(item.expiry_date);
     const color = getExpiryColor(status);
     const freshness = getFreshnessPercent(item.expiry_date, item.original_expiry_date);
 
     return (
-      <TouchableOpacity style={styles.itemCard} onPress={() => handleItemAction(item)}>
-        <View style={[styles.freshnessBar, { backgroundColor: color, width: `${freshness}%` }]} />
-        <View style={styles.itemContent}>
-          <View style={styles.itemLeft}>
-            <Text style={styles.itemName}>{item.ingredient?.name || 'Unknown'}</Text>
-            <Text style={styles.itemMeta}>
-              {item.quantity_text} &middot; {formatStorageLocation(item.storage_location)}
-              {item.is_opened ? ' &middot; Opened' : ''}
-            </Text>
+      <FadeInView delay={Math.min(index * 40, 400)} translateY={8}>
+        <PressableScale onPress={() => handleItemAction(item)} style={styles.itemCard} scaleTo={0.98}>
+          <View style={[styles.freshnessBar, { backgroundColor: color, width: `${freshness}%` }]} />
+          <View style={styles.itemContent}>
+            <View style={styles.itemLeft}>
+              <Text style={styles.itemName}>{item.ingredient?.name || 'Unknown'}</Text>
+              <Text style={styles.itemMeta}>
+                {item.quantity_text} &middot; {formatStorageLocation(item.storage_location)}
+                {item.is_opened ? ' &middot; Opened' : ''}
+              </Text>
+            </View>
+            <View style={styles.itemRight}>
+              <Text style={[styles.expiryText, { color }]}>{getExpiryLabel(item.expiry_date)}</Text>
+              {status === 'expiring_soon' || status === 'expiring_today' ? (
+                <PressableScale
+                  style={styles.freezeButton}
+                  onPress={() => freezeToSave(item.id)}
+                >
+                  <FontAwesome name="snowflake-o" size={12} color={ExpiryColors.frozen} />
+                  <Text style={styles.freezeText}>Freeze</Text>
+                </PressableScale>
+              ) : null}
+            </View>
           </View>
-          <View style={styles.itemRight}>
-            <Text style={[styles.expiryText, { color }]}>{getExpiryLabel(item.expiry_date)}</Text>
-            {status === 'expiring_soon' || status === 'expiring_today' ? (
-              <TouchableOpacity
-                style={styles.freezeButton}
-                onPress={(e) => {
-                  e.stopPropagation?.();
-                  freezeToSave(item.id);
-                }}
-              >
-                <FontAwesome name="snowflake-o" size={12} color={ExpiryColors.frozen} />
-                <Text style={styles.freezeText}>Freeze</Text>
-              </TouchableOpacity>
-            ) : null}
-          </View>
-        </View>
-      </TouchableOpacity>
+        </PressableScale>
+      </FadeInView>
     );
   };
 

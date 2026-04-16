@@ -15,6 +15,7 @@ import { Stack, useRouter } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
 import Colors from '@/constants/Colors';
 import { parseVoiceText, startWebSpeechRecognition, type ParsedVoiceItem } from '@/services/voiceService';
+import { FadeInView, PressableScale, PulseView } from '@/components/Animated';
 
 export default function VoiceAddScreen() {
   const router = useRouter();
@@ -87,12 +88,16 @@ export default function VoiceAddScreen() {
 
           {/* Mic button */}
           <View style={styles.micSection}>
-            <TouchableOpacity
-              style={[styles.micButton, isListening && styles.micButtonActive]}
-              onPress={isListening ? stopListening : startListening}
-            >
-              <FontAwesome name={isListening ? 'stop' : 'microphone'} size={36} color="#fff" />
-            </TouchableOpacity>
+            <PulseView active={isListening} color="#D32F2F" style={{ width: 96, height: 96, borderRadius: 48 }}>
+              <PressableScale
+                onPress={isListening ? stopListening : startListening}
+                scaleTo={0.92}
+              >
+                <View style={[styles.micButton, isListening && styles.micButtonActive]}>
+                  <FontAwesome name={isListening ? 'stop' : 'microphone'} size={36} color="#fff" />
+                </View>
+              </PressableScale>
+            </PulseView>
             <Text style={styles.micLabel}>
               {isListening ? 'Listening...' : 'Tap to speak'}
             </Text>
@@ -134,23 +139,27 @@ export default function VoiceAddScreen() {
             <View style={styles.resultsSection}>
               <Text style={styles.resultsTitle}>Found {items.length} items</Text>
               {items.map((item, idx) => (
-                <View key={idx} style={styles.itemCard}>
-                  <View style={styles.itemInfo}>
-                    <Text style={styles.itemName}>{item.name}</Text>
-                    <Text style={styles.itemMeta}>
-                      {item.quantity} - {item.category}
-                    </Text>
+                <FadeInView key={idx} delay={idx * 50}>
+                  <View style={styles.itemCard}>
+                    <View style={styles.itemInfo}>
+                      <Text style={styles.itemName}>{item.name}</Text>
+                      <Text style={styles.itemMeta}>
+                        {item.quantity} - {item.category}
+                      </Text>
+                    </View>
+                    <PressableScale onPress={() => removeItem(idx)}>
+                      <FontAwesome name="times" size={18} color="#999" />
+                    </PressableScale>
                   </View>
-                  <TouchableOpacity onPress={() => removeItem(idx)}>
-                    <FontAwesome name="times" size={18} color="#999" />
-                  </TouchableOpacity>
-                </View>
+                </FadeInView>
               ))}
 
-              <TouchableOpacity style={styles.confirmButton} onPress={handleConfirmAll}>
-                <FontAwesome name="check" size={16} color="#fff" />
-                <Text style={styles.confirmButtonText}>Add All to Inventory</Text>
-              </TouchableOpacity>
+              <FadeInView delay={items.length * 50 + 80}>
+                <PressableScale style={styles.confirmButton} onPress={handleConfirmAll}>
+                  <FontAwesome name="check" size={16} color="#fff" />
+                  <Text style={styles.confirmButtonText}>Add All to Inventory</Text>
+                </PressableScale>
+              </FadeInView>
             </View>
           )}
         </ScrollView>

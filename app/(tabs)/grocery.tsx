@@ -15,6 +15,7 @@ import { useGroceryStore } from '@/stores/groceryStore';
 import { useAuthStore } from '@/stores/authStore';
 import type { GroceryListItem } from '@/lib/types';
 import { getLayout, recordCheckoff, recomputeLayout, sortByAisle, type AisleLayout } from '@/services/aisleService';
+import { FadeInView, PressableScale, CheckmarkAnimation } from '@/components/Animated';
 
 export default function GroceryScreen() {
   const [newItemText, setNewItemText] = useState('');
@@ -78,12 +79,14 @@ export default function GroceryScreen() {
     ]);
   };
 
-  const renderItem = ({ item }: { item: GroceryListItem }) => (
-    <TouchableOpacity
-      style={[styles.itemCard, item.is_purchased && styles.itemPurchased]}
-      onPress={() => handleTogglePurchased(item)}
-      onLongPress={() => handleSwipeDelete(item.id)}
-    >
+  const renderItem = ({ item, index }: { item: GroceryListItem; index: number }) => (
+    <FadeInView delay={Math.min(index * 30, 300)} translateY={6}>
+      <PressableScale
+        style={[styles.itemCard, item.is_purchased && styles.itemPurchased]}
+        onPress={() => handleTogglePurchased(item)}
+        onLongPress={() => handleSwipeDelete(item.id)}
+        scaleTo={0.98}
+      >
       <View style={[styles.checkbox, item.is_purchased && styles.checkboxChecked]}>
         {item.is_purchased && <FontAwesome name="check" size={12} color="#fff" />}
       </View>
@@ -108,7 +111,8 @@ export default function GroceryScreen() {
           <Text style={styles.priceText}>${item.estimated_price.toFixed(2)}</Text>
         )}
       </View>
-    </TouchableOpacity>
+      </PressableScale>
+    </FadeInView>
   );
 
   return (

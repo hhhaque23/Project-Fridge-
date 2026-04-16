@@ -12,6 +12,7 @@ import { FontAwesome } from '@expo/vector-icons';
 import Colors from '@/constants/Colors';
 import { useAuthStore } from '@/stores/authStore';
 import { useRouter } from 'expo-router';
+import { FadeInView, PressableScale, CountUp } from '@/components/Animated';
 
 export default function ProfileScreen() {
   const { user, signOut } = useAuthStore();
@@ -73,63 +74,70 @@ export default function ProfileScreen() {
     <SafeAreaView style={styles.container}>
       <ScrollView>
         {/* Profile header */}
-        <View style={styles.header}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>
-              {user?.display_name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || '?'}
-            </Text>
+        <FadeInView>
+          <View style={styles.header}>
+            <View style={styles.avatar}>
+              <Text style={styles.avatarText}>
+                {user?.display_name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || '?'}
+              </Text>
+            </View>
+            <Text style={styles.displayName}>{user?.display_name || 'FreshScan User'}</Text>
+            <Text style={styles.email}>{user?.email || ''}</Text>
+            <View style={styles.tierBadge}>
+              <FontAwesome name="star" size={12} color={Colors.brand.accent} />
+              <Text style={styles.tierText}>{user?.subscription_tier || 'Free'} Plan</Text>
+            </View>
           </View>
-          <Text style={styles.displayName}>{user?.display_name || 'FreshScan User'}</Text>
-          <Text style={styles.email}>{user?.email || ''}</Text>
-          <View style={styles.tierBadge}>
-            <FontAwesome name="star" size={12} color={Colors.brand.accent} />
-            <Text style={styles.tierText}>{user?.subscription_tier || 'Free'} Plan</Text>
-          </View>
-        </View>
+        </FadeInView>
 
         {/* Waste score card */}
-        <TouchableOpacity style={styles.wasteCard} onPress={() => router.push('/waste-dashboard' as any)}>
-          <View style={styles.wasteRow}>
-            <View style={styles.wasteStat}>
-              <Text style={styles.wasteStatValue}>87%</Text>
-              <Text style={styles.wasteStatLabel}>Waste Score</Text>
+        <FadeInView delay={100}>
+          <PressableScale style={styles.wasteCard} onPress={() => router.push('/waste-dashboard' as any)} scaleTo={0.98}>
+            <View style={styles.wasteRow}>
+              <View style={styles.wasteStat}>
+                <CountUp to={87} suffix="%" duration={1200} style={styles.wasteStatValue} />
+                <Text style={styles.wasteStatLabel}>Waste Score</Text>
+              </View>
+              <View style={styles.wasteDivider} />
+              <View style={styles.wasteStat}>
+                <CountUp to={42} prefix="$" duration={1200} style={[styles.wasteStatValue, { color: Colors.brand.primary }]} />
+                <Text style={styles.wasteStatLabel}>Saved this month</Text>
+              </View>
+              <View style={styles.wasteDivider} />
+              <View style={styles.wasteStat}>
+                <CountUp to={3.2} suffix="kg" decimals={1} duration={1200} style={styles.wasteStatValue} />
+                <Text style={styles.wasteStatLabel}>CO2 avoided</Text>
+              </View>
             </View>
-            <View style={styles.wasteDivider} />
-            <View style={styles.wasteStat}>
-              <Text style={[styles.wasteStatValue, { color: Colors.brand.primary }]}>$42</Text>
-              <Text style={styles.wasteStatLabel}>Saved this month</Text>
-            </View>
-            <View style={styles.wasteDivider} />
-            <View style={styles.wasteStat}>
-              <Text style={styles.wasteStatValue}>3.2kg</Text>
-              <Text style={styles.wasteStatLabel}>CO2 avoided</Text>
-            </View>
-          </View>
-        </TouchableOpacity>
+          </PressableScale>
+        </FadeInView>
 
         {/* Settings sections */}
-        {sections.map((section) => (
-          <View key={section.title} style={styles.section}>
-            <Text style={styles.sectionTitle}>{section.title}</Text>
-            <View style={styles.sectionCard}>
-              {section.items.map((item, idx) => (
-                <TouchableOpacity
-                  key={item.label}
-                  style={[styles.settingsRow, idx < section.items.length - 1 && styles.settingsRowBorder]}
-                  onPress={item.onPress}
-                >
-                  <FontAwesome name={item.icon as any} size={18} color={Colors.brand.primary} style={styles.settingsIcon} />
-                  <View style={styles.settingsInfo}>
-                    <Text style={styles.settingsLabel}>{item.label}</Text>
-                    {item.subtitle ? (
-                      <Text style={styles.settingsSubtitle}>{item.subtitle}</Text>
-                    ) : null}
-                  </View>
-                  <FontAwesome name="chevron-right" size={12} color="#CCC" />
-                </TouchableOpacity>
-              ))}
+        {sections.map((section, sectionIdx) => (
+          <FadeInView key={section.title} delay={200 + sectionIdx * 80}>
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>{section.title}</Text>
+              <View style={styles.sectionCard}>
+                {section.items.map((item, idx) => (
+                  <PressableScale
+                    key={item.label}
+                    style={[styles.settingsRow, idx < section.items.length - 1 && styles.settingsRowBorder]}
+                    onPress={item.onPress}
+                    scaleTo={0.98}
+                  >
+                    <FontAwesome name={item.icon as any} size={18} color={Colors.brand.primary} style={styles.settingsIcon} />
+                    <View style={styles.settingsInfo}>
+                      <Text style={styles.settingsLabel}>{item.label}</Text>
+                      {item.subtitle ? (
+                        <Text style={styles.settingsSubtitle}>{item.subtitle}</Text>
+                      ) : null}
+                    </View>
+                    <FontAwesome name="chevron-right" size={12} color="#CCC" />
+                  </PressableScale>
+                ))}
+              </View>
             </View>
-          </View>
+          </FadeInView>
         ))}
 
         {/* Sign out */}

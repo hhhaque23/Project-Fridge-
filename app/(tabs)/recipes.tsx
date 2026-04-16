@@ -20,6 +20,7 @@ import { formatTimeMinutes } from '@/lib/helpers';
 import { generateRecipe } from '@/services/recipeGenerator';
 import type { Recipe } from '@/lib/types';
 import { Alert, ActivityIndicator } from 'react-native';
+import { FadeInView, PressableScale } from '@/components/Animated';
 
 const CUISINES = ['All', 'Italian', 'Mexican', 'Asian', 'American', 'Mediterranean', 'Indian'];
 
@@ -81,9 +82,10 @@ export default function RecipesScreen() {
   const topRecipe = rankedRecipes[0];
 
   const RecipeCard = ({ recipe, compact = false }: { recipe: Recipe; compact?: boolean }) => (
-    <TouchableOpacity
-      style={compact ? styles.compactCard : styles.recipeCard}
+    <PressableScale
       onPress={() => router.push(`/recipe/${recipe.id}` as any)}
+      style={compact ? styles.compactCard : styles.recipeCard}
+      scaleTo={0.97}
     >
       {recipe.image_url ? (
         <Image source={{ uri: recipe.image_url }} style={compact ? styles.compactImage : styles.recipeImage} />
@@ -111,7 +113,7 @@ export default function RecipesScreen() {
           </View>
         )}
       </View>
-    </TouchableOpacity>
+    </PressableScale>
   );
 
   return (
@@ -133,22 +135,25 @@ export default function RecipesScreen() {
           <>
             {/* Use It or Lose It hero */}
             {topRecipe && (
-              <TouchableOpacity
-                style={styles.heroCard}
-                onPress={() => router.push(`/recipe/${topRecipe.id}` as any)}
-              >
-                <View style={styles.heroBadge}>
-                  <FontAwesome name="fire" size={12} color="#fff" />
-                  <Text style={styles.heroBadgeText}>Use It or Lose It</Text>
-                </View>
-                <Text style={styles.heroTitle}>{topRecipe.title}</Text>
-                <Text style={styles.heroSubtitle}>
-                  {formatTimeMinutes(topRecipe.total_time_min)} &middot; {topRecipe.cuisine}
-                </Text>
-                <Text style={styles.heroDescription} numberOfLines={2}>
-                  {topRecipe.description}
-                </Text>
-              </TouchableOpacity>
+              <FadeInView delay={50}>
+                <PressableScale
+                  style={styles.heroCard}
+                  onPress={() => router.push(`/recipe/${topRecipe.id}` as any)}
+                  scaleTo={0.98}
+                >
+                  <View style={styles.heroBadge}>
+                    <FontAwesome name="fire" size={12} color="#fff" />
+                    <Text style={styles.heroBadgeText}>Use It or Lose It</Text>
+                  </View>
+                  <Text style={styles.heroTitle}>{topRecipe.title}</Text>
+                  <Text style={styles.heroSubtitle}>
+                    {formatTimeMinutes(topRecipe.total_time_min)} &middot; {topRecipe.cuisine}
+                  </Text>
+                  <Text style={styles.heroDescription} numberOfLines={2}>
+                    {topRecipe.description}
+                  </Text>
+                </PressableScale>
+              </FadeInView>
             )}
 
             {/* Cook Now shelf */}
@@ -188,64 +193,69 @@ export default function RecipesScreen() {
             )}
 
             {/* AI Generate button */}
-            <TouchableOpacity
-              style={styles.aiGenerateBanner}
-              onPress={handleGenerateRecipe}
-              disabled={isGenerating}
-            >
-              <View style={styles.aiIconBox}>
-                {isGenerating ? (
-                  <ActivityIndicator color="#7C4DFF" />
-                ) : (
-                  <FontAwesome name="magic" size={18} color="#7C4DFF" />
-                )}
-              </View>
-              <View style={styles.aiTextBox}>
-                <Text style={styles.aiBannerTitle}>
-                  {isGenerating ? 'Generating recipe...' : 'AI Recipe from your fridge'}
-                </Text>
-                <Text style={styles.aiBannerSubtitle}>
-                  Custom recipe using items expiring soon
-                </Text>
-              </View>
-              <FontAwesome name="chevron-right" size={12} color="#999" />
-            </TouchableOpacity>
+            <FadeInView delay={120}>
+              <PressableScale
+                style={styles.aiGenerateBanner}
+                onPress={handleGenerateRecipe}
+                disabled={isGenerating}
+                scaleTo={0.97}
+              >
+                <View style={styles.aiIconBox}>
+                  {isGenerating ? (
+                    <ActivityIndicator color="#7C4DFF" />
+                  ) : (
+                    <FontAwesome name="magic" size={18} color="#7C4DFF" />
+                  )}
+                </View>
+                <View style={styles.aiTextBox}>
+                  <Text style={styles.aiBannerTitle}>
+                    {isGenerating ? 'Generating recipe...' : 'AI Recipe from your fridge'}
+                  </Text>
+                  <Text style={styles.aiBannerSubtitle}>
+                    Custom recipe using items expiring soon
+                  </Text>
+                </View>
+                <FontAwesome name="chevron-right" size={12} color="#999" />
+              </PressableScale>
+            </FadeInView>
 
             {/* Generated recipe preview */}
             {generatedRecipe && (
-              <View style={styles.aiResultCard}>
-                <View style={styles.aiResultHeader}>
-                  <FontAwesome name="magic" size={14} color="#7C4DFF" />
-                  <Text style={styles.aiResultBadge}>AI-Generated</Text>
-                </View>
-                <Text style={styles.aiResultTitle}>{generatedRecipe.title}</Text>
-                <Text style={styles.aiResultDesc} numberOfLines={2}>
-                  {generatedRecipe.description}
-                </Text>
-                <View style={styles.aiResultMeta}>
-                  <Text style={styles.aiResultMetaText}>
-                    {formatTimeMinutes(generatedRecipe.total_time_min)}
+              <FadeInView translateY={20}>
+                <View style={styles.aiResultCard}>
+                  <View style={styles.aiResultHeader}>
+                    <FontAwesome name="magic" size={14} color="#7C4DFF" />
+                    <Text style={styles.aiResultBadge}>AI-Generated</Text>
+                  </View>
+                  <Text style={styles.aiResultTitle}>{generatedRecipe.title}</Text>
+                  <Text style={styles.aiResultDesc} numberOfLines={2}>
+                    {generatedRecipe.description}
                   </Text>
-                  <Text style={styles.aiResultMetaText}>
-                    {generatedRecipe.servings} servings
-                  </Text>
-                  <Text style={styles.aiResultMetaText}>
-                    {generatedRecipe.ingredients?.length || 0} ingredients
-                  </Text>
+                  <View style={styles.aiResultMeta}>
+                    <Text style={styles.aiResultMetaText}>
+                      {formatTimeMinutes(generatedRecipe.total_time_min)}
+                    </Text>
+                    <Text style={styles.aiResultMetaText}>
+                      {generatedRecipe.servings} servings
+                    </Text>
+                    <Text style={styles.aiResultMetaText}>
+                      {generatedRecipe.ingredients?.length || 0} ingredients
+                    </Text>
+                  </View>
+                  <View style={styles.aiResultActions}>
+                    <PressableScale
+                      style={styles.aiDismissButton}
+                      onPress={() => setGeneratedRecipe(null)}
+                    >
+                      <Text style={styles.aiDismissText}>Dismiss</Text>
+                    </PressableScale>
+                    <PressableScale style={styles.aiViewButton} onPress={handleGenerateRecipe}>
+                      <FontAwesome name="refresh" size={12} color="#7C4DFF" />
+                      <Text style={styles.aiViewText}>Regenerate</Text>
+                    </PressableScale>
+                  </View>
                 </View>
-                <View style={styles.aiResultActions}>
-                  <TouchableOpacity
-                    style={styles.aiDismissButton}
-                    onPress={() => setGeneratedRecipe(null)}
-                  >
-                    <Text style={styles.aiDismissText}>Dismiss</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.aiViewButton} onPress={handleGenerateRecipe}>
-                    <FontAwesome name="refresh" size={12} color="#7C4DFF" />
-                    <Text style={styles.aiViewText}>Regenerate</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
+              </FadeInView>
             )}
 
             {/* Cuisine filter */}
