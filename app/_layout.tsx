@@ -68,6 +68,9 @@ function RootNav() {
       <Stack.Screen name="receipt-scan" options={{ headerShown: true }} />
       <Stack.Screen name="storage-advisor" options={{ headerShown: true }} />
       <Stack.Screen name="settings" options={{ headerShown: true }} />
+      <Stack.Screen name="loyalty" options={{ headerShown: true }} />
+      <Stack.Screen name="cost-split" options={{ headerShown: true }} />
+      <Stack.Screen name="accuracy" options={{ headerShown: true }} />
     </Stack>
   );
 }

@@ -46,8 +46,16 @@ export default function ProfileScreen() {
       items: [
         { icon: 'pie-chart', label: 'Waste Dashboard', subtitle: 'Score, money saved, CO2 avoided', onPress: () => router.push('/waste-dashboard' as any) },
         { icon: 'lightbulb-o', label: 'Storage Advisor', subtitle: 'Tips & ethylene warnings', onPress: () => router.push('/storage-advisor' as any) },
+        { icon: 'line-chart', label: 'AI Accuracy', subtitle: 'Personal learning insights', onPress: () => router.push('/accuracy' as any) },
         { icon: 'microphone', label: 'Voice Add', subtitle: 'Add items by voice', onPress: () => router.push('/voice-add' as any) },
         { icon: 'file-text-o', label: 'Receipt Scan', subtitle: 'Auto-import from receipt', onPress: () => router.push('/receipt-scan' as any) },
+      ],
+    },
+    {
+      title: 'Integrations',
+      items: [
+        { icon: 'credit-card', label: 'Loyalty Cards', subtitle: 'Auto-import from Kroger, Walmart, Target', onPress: () => router.push('/loyalty' as any) },
+        { icon: 'dollar', label: 'Cost Splitting', subtitle: 'Split with roommates, Venmo integration', onPress: () => router.push('/cost-split' as any) },
       ],
     },
     {

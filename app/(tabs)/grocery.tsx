@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -14,18 +14,37 @@ import Colors from '@/constants/Colors';
 import { useGroceryStore } from '@/stores/groceryStore';
 import { useAuthStore } from '@/stores/authStore';
 import type { GroceryListItem } from '@/lib/types';
+import { getLayout, recordCheckoff, recomputeLayout, sortByAisle, type AisleLayout } from '@/services/aisleService';
 
 export default function GroceryScreen() {
   const [newItemText, setNewItemText] = useState('');
+  const [layout, setLayout] = useState<AisleLayout | null>(null);
+  const [aisleSort, setAisleSort] = useState(true);
   const { items, isLoading, fetchItems, addItem, togglePurchased, removeItem, clearPurchased } = useGroceryStore();
   const user = useAuthStore((s) => s.user);
 
   useEffect(() => {
     if (user?.household_id) fetchItems(user.household_id);
+    getLayout().then(setLayout);
   }, [user?.household_id]);
 
-  const unpurchased = items.filter((i) => !i.is_purchased);
+  const unpurchasedRaw = items.filter((i) => !i.is_purchased);
   const purchased = items.filter((i) => i.is_purchased);
+
+  const unpurchased = useMemo(() => {
+    if (!aisleSort || !layout) return unpurchasedRaw;
+    return sortByAisle(unpurchasedRaw, layout);
+  }, [unpurchasedRaw, layout, aisleSort]);
+
+  const handleTogglePurchased = async (item: GroceryListItem) => {
+    if (!item.is_purchased && item.ingredient?.category) {
+      // Record category check-off for aisle learning
+      await recordCheckoff(item.ingredient.category);
+      const updatedLayout = await recomputeLayout();
+      setLayout(updatedLayout);
+    }
+    togglePurchased(item.id);
+  };
 
   const handleAddItem = async () => {
     if (!newItemText.trim() || !user?.household_id) return;
@@ -62,7 +81,7 @@ export default function GroceryScreen() {
   const renderItem = ({ item }: { item: GroceryListItem }) => (
     <TouchableOpacity
       style={[styles.itemCard, item.is_purchased && styles.itemPurchased]}
-      onPress={() => togglePurchased(item.id)}
+      onPress={() => handleTogglePurchased(item)}
       onLongPress={() => handleSwipeDelete(item.id)}
     >
       <View style={[styles.checkbox, item.is_purchased && styles.checkboxChecked]}>
@@ -119,12 +138,32 @@ export default function GroceryScreen() {
         <Text style={styles.summaryText}>
           {unpurchased.length} items remaining
         </Text>
-        {purchased.length > 0 && (
-          <TouchableOpacity onPress={handleClearPurchased}>
-            <Text style={styles.clearText}>Clear {purchased.length} done</Text>
+        <View style={styles.summaryActions}>
+          <TouchableOpacity
+            style={styles.aisleToggle}
+            onPress={() => setAisleSort(!aisleSort)}
+          >
+            <FontAwesome name={aisleSort ? 'sort' : 'list-ul'} size={11} color={aisleSort ? Colors.brand.primary : '#999'} />
+            <Text style={[styles.aisleToggleText, aisleSort && { color: Colors.brand.primary, fontWeight: '700' }]}>
+              {aisleSort ? 'Aisle order' : 'Add order'}
+            </Text>
           </TouchableOpacity>
-        )}
+          {purchased.length > 0 && (
+            <TouchableOpacity onPress={handleClearPurchased}>
+              <Text style={styles.clearText}>Clear {purchased.length}</Text>
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
+
+      {layout && layout.visit_count > 0 && aisleSort && (
+        <View style={styles.aisleHint}>
+          <FontAwesome name="magic" size={11} color={Colors.brand.primary} />
+          <Text style={styles.aisleHintText}>
+            Auto-learned from {layout.visit_count} shopping trip{layout.visit_count !== 1 ? 's' : ''}
+          </Text>
+        </View>
+      )}
 
       {/* Items list */}
       <FlatList
@@ -166,7 +205,12 @@ const styles = StyleSheet.create({
   addButtonDisabled: { opacity: 0.4 },
   summaryBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 8 },
   summaryText: { fontSize: 13, color: '#999', fontWeight: '500' },
+  summaryActions: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  aisleToggle: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  aisleToggleText: { fontSize: 12, color: '#999', fontWeight: '500' },
   clearText: { fontSize: 13, color: Colors.brand.primary, fontWeight: '600' },
+  aisleHint: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 16, paddingBottom: 6 },
+  aisleHintText: { fontSize: 11, color: Colors.brand.primary, fontStyle: 'italic' },
   listContent: { paddingHorizontal: 16, paddingBottom: 20 },
   itemCard: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#F5F5F5' },
   itemPurchased: { opacity: 0.5 },
