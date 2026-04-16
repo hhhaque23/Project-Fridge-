@@ -30,6 +30,9 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     storage: storage as any,
     autoRefreshToken: true,
     persistSession: true,
-    detectSessionInUrl: false,
+    // On web, detect session tokens from URL hash (magic link flow)
+    // On native, we handle this manually in authStore
+    detectSessionInUrl: Platform.OS === 'web',
+    flowType: 'implicit',
   },
 });

@@ -6,7 +6,7 @@ import { useEffect } from 'react';
 import { useAuthStore } from '@/stores/authStore';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { StatusBar } from 'expo-status-bar';
-import { View, ActivityIndicator } from 'react-native';
+import { View, ActivityIndicator, Platform } from 'react-native';
 import Colors from '@/constants/Colors';
 
 export { ErrorBoundary } from 'expo-router';
@@ -14,6 +14,17 @@ export { ErrorBoundary } from 'expo-router';
 const queryClient = new QueryClient();
 
 SplashScreen.preventAutoHideAsync();
+
+// On web, clean the URL hash tokens after Supabase picks them up
+function cleanUrlTokens() {
+  if (Platform.OS !== 'web' || typeof window === 'undefined') return;
+  if (window.location.hash && window.location.hash.includes('access_token')) {
+    // Wait for Supabase to parse the tokens, then clean the URL
+    setTimeout(() => {
+      window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
+    }, 1500);
+  }
+}
 
 function RootNav() {
   const router = useRouter();
