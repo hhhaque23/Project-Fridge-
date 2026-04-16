@@ -22,6 +22,7 @@ import type { VisionScanItem } from '@/lib/types';
 import { getExpiryColor, getExpiryStatus } from '@/lib/helpers';
 import { useRouter } from 'expo-router';
 import { FadeInView, PressableScale, PulseView, StaggeredList } from '@/components/Animated';
+import { DemoBanner } from '@/components/DemoBanner';
 
 // Lazy import to avoid breaking web SSR
 let CameraView: any = null;
@@ -225,6 +226,7 @@ export default function ScanScreen() {
   // Main scan screen
   return (
     <SafeAreaView style={styles.container}>
+      <DemoBanner />
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {!photo && scanResults.length === 0 && !barcodeResult && (
           <View style={styles.heroSection}>

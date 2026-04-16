@@ -1,9 +1,27 @@
-// Reusable animation components - lightweight, dependency-free using RN Animated API
+// Reusable animation components - lightweight using RN Animated API + haptics
 import React, { useEffect, useRef, useState } from 'react';
-import { Animated, Easing, Pressable, View, Text, ViewStyle, TextStyle } from 'react-native';
+import { Animated, Easing, Pressable, View, Text, ViewStyle, TextStyle, Platform } from 'react-native';
+
+// Lazy load haptics so it doesn't break web SSR
+let Haptics: any = null;
+if (Platform.OS !== 'web') {
+  try {
+    Haptics = require('expo-haptics');
+  } catch {}
+}
+
+function lightHaptic() {
+  if (Haptics) {
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    } catch {}
+  } else if (typeof window !== 'undefined' && (window as any).navigator?.vibrate) {
+    // Web vibration API for Android Chrome
+    try { (window as any).navigator.vibrate(8); } catch {}
+  }
+}
 
 // ─── FadeInView ──────────────────────────────────────────
-// Fades in from below with a slight upward translate
 interface FadeInViewProps {
   children: React.ReactNode;
   delay?: number;
@@ -49,13 +67,14 @@ export function FadeInView({
 }
 
 // ─── PressableScale ──────────────────────────────────────
-// Button wrapper with spring scale on press for tactile feedback
+// Real button feel: scale + shadow press + haptic + brightness shift
 interface PressableScaleProps {
   children: React.ReactNode;
   onPress?: () => void;
   onLongPress?: () => void;
   disabled?: boolean;
   scaleTo?: number;
+  haptic?: boolean;
   style?: ViewStyle | ViewStyle[] | any;
   hitSlop?: { top?: number; left?: number; right?: number; bottom?: number };
 }
@@ -65,47 +84,76 @@ export function PressableScale({
   onPress,
   onLongPress,
   disabled,
-  scaleTo = 0.96,
+  scaleTo = 0.94,
+  haptic = true,
   style,
   hitSlop,
 }: PressableScaleProps) {
   const scale = useRef(new Animated.Value(1)).current;
+  const opacity = useRef(new Animated.Value(1)).current;
 
   const handlePressIn = () => {
-    Animated.spring(scale, {
-      toValue: scaleTo,
-      useNativeDriver: true,
-      speed: 30,
-      bounciness: 6,
-    }).start();
+    Animated.parallel([
+      Animated.spring(scale, {
+        toValue: scaleTo,
+        useNativeDriver: true,
+        speed: 40,
+        bounciness: 0,
+      }),
+      Animated.timing(opacity, {
+        toValue: 0.8,
+        duration: 60,
+        useNativeDriver: true,
+      }),
+    ]).start();
   };
 
   const handlePressOut = () => {
-    Animated.spring(scale, {
-      toValue: 1,
-      useNativeDriver: true,
-      speed: 30,
-      bounciness: 8,
-    }).start();
+    Animated.parallel([
+      Animated.spring(scale, {
+        toValue: 1,
+        useNativeDriver: true,
+        speed: 30,
+        bounciness: 10,
+      }),
+      Animated.timing(opacity, {
+        toValue: 1,
+        duration: 120,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  const handlePress = () => {
+    if (haptic && !disabled) lightHaptic();
+    onPress?.();
   };
 
   return (
     <Pressable
-      onPress={onPress}
+      onPress={handlePress}
       onLongPress={onLongPress}
       disabled={disabled}
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
       hitSlop={hitSlop}
-      style={({ pressed }) => [{ opacity: disabled ? 0.5 : 1 }]}
     >
-      <Animated.View style={[style, { transform: [{ scale }] }]}>{children}</Animated.View>
+      <Animated.View
+        style={[
+          style,
+          {
+            transform: [{ scale }],
+            opacity: disabled ? 0.4 : opacity,
+          },
+        ]}
+      >
+        {children}
+      </Animated.View>
     </Pressable>
   );
 }
 
 // ─── CountUp ─────────────────────────────────────────────
-// Animates a number from 0 to target value with optional prefix/suffix
 interface CountUpProps {
   to: number;
   duration?: number;
@@ -139,7 +187,6 @@ export function CountUp({ to, duration = 1000, decimals = 0, prefix = '', suffix
 }
 
 // ─── PulseView ───────────────────────────────────────────
-// Continuously pulses (good for mic/scan buttons in active state)
 interface PulseViewProps {
   children: React.ReactNode;
   active?: boolean;
@@ -189,7 +236,6 @@ export function PulseView({ children, active = true, style, color = '#4CAF50' }:
 }
 
 // ─── StaggeredList ──────────────────────────────────────
-// Wraps children to fade them in one after another
 interface StaggeredListProps {
   children: React.ReactNode[];
   staggerMs?: number;
@@ -210,7 +256,6 @@ export function StaggeredList({ children, staggerMs = 60, initialDelay = 0 }: St
 }
 
 // ─── BouncyBadge ─────────────────────────────────────────
-// Pops in with a bounce when value changes (useful for counts/badges)
 interface BouncyBadgeProps {
   children: React.ReactNode;
   triggerKey: any;
@@ -231,7 +276,6 @@ export function BouncyBadge({ children, triggerKey, style }: BouncyBadgeProps) {
 }
 
 // ─── Skeleton ────────────────────────────────────────────
-// Shimmering placeholder for loading states
 interface SkeletonProps {
   width?: number | string;
   height?: number;
@@ -272,7 +316,6 @@ export function Skeleton({ width = '100%', height = 16, borderRadius = 4, style 
 }
 
 // ─── CheckmarkAnimation ──────────────────────────────────
-// Animated checkmark that pops in with a bounce
 interface CheckmarkAnimationProps {
   size?: number;
   color?: string;

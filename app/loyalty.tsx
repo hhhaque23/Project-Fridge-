@@ -10,6 +10,7 @@ import {
   TextInput,
   ActivityIndicator,
   Modal,
+  Pressable,
 } from 'react-native';
 import { Stack } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
@@ -222,8 +223,8 @@ export default function LoyaltyScreen() {
           animationType="slide"
           onRequestClose={() => setShowConnectModal(null)}
         >
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalCard}>
+          <Pressable style={styles.modalOverlay} onPress={() => { setShowConnectModal(null); setEmailInput(''); }}>
+            <Pressable style={styles.modalCard} onPress={() => {}}>
               {showConnectModal && (
                 <>
                   <View style={styles.modalHeader}>
@@ -282,8 +283,8 @@ export default function LoyaltyScreen() {
                   </View>
                 </>
               )}
-            </View>
-          </View>
+            </Pressable>
+          </Pressable>
         </Modal>
       </SafeAreaView>
     </>

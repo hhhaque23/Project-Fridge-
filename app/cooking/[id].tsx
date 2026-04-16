@@ -11,6 +11,7 @@ import {
   Platform,
   ScrollView,
   ActivityIndicator,
+  Pressable,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
@@ -323,8 +324,8 @@ export default function CookingModeScreen() {
         animationType="slide"
         onRequestClose={() => setShowSubstitution(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
+        <Pressable style={styles.modalOverlay} onPress={() => setShowSubstitution(false)}>
+          <Pressable style={styles.modalCard} onPress={() => {}}>
             <View style={styles.modalHeader}>
               <FontAwesome name="exchange" size={20} color={Colors.brand.primaryLight} />
               <Text style={styles.modalTitle}>Ingredient Substitute</Text>
@@ -390,8 +391,8 @@ export default function CookingModeScreen() {
                 </View>
               ))}
             </ScrollView>
-          </View>
-        </View>
+          </Pressable>
+        </Pressable>
       </Modal>
     </SafeAreaView>
   );
