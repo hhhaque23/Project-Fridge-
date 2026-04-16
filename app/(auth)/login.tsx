@@ -10,11 +10,13 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '@/stores/authStore';
 import Colors from '@/constants/Colors';
 import { FontAwesome } from '@expo/vector-icons';
+import { FadeInView, PressableScale } from '@/components/Animated';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -59,22 +61,24 @@ export default function LoginScreen() {
   if (emailSent) {
     return (
       <SafeAreaView style={styles.container}>
-        <View style={styles.content}>
-          <View style={styles.iconCircle}>
-            <FontAwesome name="envelope-o" size={48} color={Colors.brand.primary} />
-          </View>
-          <Text style={styles.title}>Check your email</Text>
-          <Text style={styles.subtitle}>
-            We sent a magic link to{'\n'}
-            <Text style={styles.emailText}>{email}</Text>
-          </Text>
-          <Text style={styles.hint}>Tap the link in the email to sign in.</Text>
-          <TouchableOpacity
-            style={styles.secondaryButton}
-            onPress={() => setEmailSent(false)}
-          >
-            <Text style={styles.secondaryButtonText}>Use a different email</Text>
-          </TouchableOpacity>
+        <View style={styles.centeredContent}>
+          <FadeInView>
+            <View style={styles.iconCircle}>
+              <FontAwesome name="envelope-o" size={48} color={Colors.brand.primary} />
+            </View>
+            <Text style={styles.title}>Check your email</Text>
+            <Text style={styles.subtitle}>
+              We sent a magic link to{'\n'}
+              <Text style={styles.emailText}>{email}</Text>
+            </Text>
+            <Text style={styles.hint}>Tap the link in the email to sign in.</Text>
+            <PressableScale
+              style={styles.secondaryButton}
+              onPress={() => setEmailSent(false)}
+            >
+              <Text style={styles.secondaryButtonText}>Use a different email</Text>
+            </PressableScale>
+          </FadeInView>
         </View>
       </SafeAreaView>
     );
@@ -83,70 +87,88 @@ export default function LoginScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.content}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={{ flex: 1 }}
+        keyboardVerticalOffset={0}
       >
-        <View style={styles.header}>
-          <Text style={styles.logo}>FreshScan</Text>
-          <Text style={styles.tagline}>
-            Scan your fridge. Reduce waste.{'\n'}Cook what matters.
-          </Text>
-        </View>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <FadeInView>
+            <View style={styles.header}>
+              <View style={styles.logoCircle}>
+                <Text style={styles.logoLetter}>F</Text>
+              </View>
+              <Text style={styles.logo}>FreshScan</Text>
+              <Text style={styles.tagline}>
+                Scan your fridge. Reduce waste.{'\n'}Cook what matters.
+              </Text>
+            </View>
+          </FadeInView>
 
-        <View style={styles.form}>
-          <Text style={styles.label}>Email address</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="you@example.com"
-            placeholderTextColor="#999"
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoComplete="email"
-          />
-          <TouchableOpacity
-            style={[styles.primaryButton, isLoading && styles.buttonDisabled]}
-            onPress={handleEmailLogin}
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.primaryButtonText}>Send Magic Link</Text>
-            )}
-          </TouchableOpacity>
-
-          <View style={styles.divider}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>or continue with</Text>
-            <View style={styles.dividerLine} />
-          </View>
-
-          <View style={styles.oauthRow}>
-            <TouchableOpacity
-              style={styles.oauthButton}
-              onPress={() => handleOAuth('google')}
-            >
-              <FontAwesome name="google" size={20} color="#DB4437" />
-              <Text style={styles.oauthButtonText}>Google</Text>
-            </TouchableOpacity>
-
-            {Platform.OS === 'ios' && (
-              <TouchableOpacity
-                style={styles.oauthButton}
-                onPress={() => handleOAuth('apple')}
+          <FadeInView delay={100}>
+            <View style={styles.form}>
+              <Text style={styles.label}>Email address</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="you@example.com"
+                placeholderTextColor="#999"
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoComplete="email"
+                returnKeyType="go"
+                onSubmitEditing={handleEmailLogin}
+              />
+              <PressableScale
+                style={[styles.primaryButton, isLoading && styles.buttonDisabled]}
+                onPress={handleEmailLogin}
+                disabled={isLoading}
               >
-                <FontAwesome name="apple" size={20} color="#000" />
-                <Text style={styles.oauthButtonText}>Apple</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        </View>
+                {isLoading ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.primaryButtonText}>Send Magic Link</Text>
+                )}
+              </PressableScale>
 
-        <Text style={styles.terms}>
-          By continuing, you agree to our Terms of Service and Privacy Policy
-        </Text>
+              <View style={styles.divider}>
+                <View style={styles.dividerLine} />
+                <Text style={styles.dividerText}>or continue with</Text>
+                <View style={styles.dividerLine} />
+              </View>
+
+              <View style={styles.oauthRow}>
+                <PressableScale
+                  style={styles.oauthButton}
+                  onPress={() => handleOAuth('google')}
+                >
+                  <FontAwesome name="google" size={20} color="#DB4437" />
+                  <Text style={styles.oauthButtonText}>Google</Text>
+                </PressableScale>
+
+                {Platform.OS === 'ios' && (
+                  <PressableScale
+                    style={styles.oauthButton}
+                    onPress={() => handleOAuth('apple')}
+                  >
+                    <FontAwesome name="apple" size={20} color="#000" />
+                    <Text style={styles.oauthButtonText}>Apple</Text>
+                  </PressableScale>
+                )}
+              </View>
+            </View>
+          </FadeInView>
+
+          <FadeInView delay={200}>
+            <Text style={styles.terms}>
+              By continuing, you agree to our Terms of Service and Privacy Policy
+            </Text>
+          </FadeInView>
+        </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -157,52 +179,74 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
-  content: {
+  scrollContent: {
+    flexGrow: 1,
+    paddingHorizontal: 24,
+    paddingTop: 40,
+    paddingBottom: 32,
+    justifyContent: 'center',
+  },
+  centeredContent: {
     flex: 1,
     paddingHorizontal: 24,
+    alignItems: 'center',
     justifyContent: 'center',
   },
   header: {
     alignItems: 'center',
-    marginBottom: 48,
-  },
-  logo: {
-    fontSize: 42,
-    fontWeight: '800',
-    color: Colors.brand.primary,
-    letterSpacing: -1,
-  },
-  tagline: {
-    fontSize: 16,
-    color: '#666',
-    textAlign: 'center',
-    marginTop: 8,
-    lineHeight: 24,
-  },
-  form: {
     marginBottom: 32,
   },
-  label: {
+  logoCircle: {
+    width: 72,
+    height: 72,
+    borderRadius: 18,
+    backgroundColor: Colors.brand.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  logoLetter: {
+    fontSize: 40,
+    fontWeight: '800',
+    color: '#fff',
+  },
+  logo: {
+    fontSize: 32,
+    fontWeight: '800',
+    color: Colors.brand.primary,
+    letterSpacing: -0.5,
+  },
+  tagline: {
     fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    marginTop: 6,
+    lineHeight: 20,
+  },
+  form: {
+    marginBottom: 20,
+  },
+  label: {
+    fontSize: 13,
     fontWeight: '600',
     color: '#333',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   input: {
     borderWidth: 1,
     borderColor: '#E0E0E0',
     borderRadius: 12,
-    padding: 16,
-    fontSize: 16,
+    padding: 14,
+    fontSize: 15,
     color: '#1a1a1a',
     backgroundColor: '#F9F9F9',
   },
   primaryButton: {
     backgroundColor: Colors.brand.primary,
     borderRadius: 12,
-    padding: 16,
+    padding: 15,
     alignItems: 'center',
-    marginTop: 16,
+    marginTop: 12,
   },
   buttonDisabled: {
     opacity: 0.7,
@@ -215,7 +259,7 @@ const styles = StyleSheet.create({
   divider: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 24,
+    marginVertical: 20,
   },
   dividerLine: {
     flex: 1,
@@ -224,12 +268,12 @@ const styles = StyleSheet.create({
   },
   dividerText: {
     marginHorizontal: 12,
-    fontSize: 13,
+    fontSize: 12,
     color: '#999',
   },
   oauthRow: {
     flexDirection: 'row',
-    gap: 12,
+    gap: 10,
   },
   oauthButton: {
     flex: 1,
@@ -239,7 +283,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E0E0E0',
     borderRadius: 12,
-    padding: 14,
+    padding: 12,
     gap: 8,
   },
   oauthButtonText: {
@@ -268,32 +312,33 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   title: {
-    fontSize: 28,
+    fontSize: 26,
     fontWeight: '700',
     color: '#1a1a1a',
     textAlign: 'center',
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 15,
     color: '#666',
     textAlign: 'center',
     marginTop: 8,
-    lineHeight: 24,
+    lineHeight: 22,
   },
   emailText: {
     fontWeight: '600',
     color: '#333',
   },
   hint: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#999',
     textAlign: 'center',
     marginTop: 16,
   },
   terms: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#999',
     textAlign: 'center',
-    lineHeight: 18,
+    lineHeight: 16,
+    marginTop: 8,
   },
 });
